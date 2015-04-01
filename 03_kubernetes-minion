@@ -1,0 +1,85 @@
+#
+# Dockerfile - Google Kubernetes
+#
+# - Build
+# docker build --rm -t kubernetes:minion -f 03_kubernetes-minion .
+#
+# - Run
+# docker run -d --name="kubernetes-minion-0" -h "kubernetes-minion-0" --privileged=true kubernetes:minion
+# docker run -d --name="kubernetes-minion-1" -h "kubernetes-minion-1" --privileged=true kubernetes:minion
+#
+# - SSH
+# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-0`
+# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-1`
+#
+# Use the base images
+FROM ubuntu:14.04
+MAINTAINER Yongbok Kim <ruo91@yongbok.net>
+
+# Change the repository
+RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
+
+# The last update and install package for docker
+RUN apt-get update && apt-get install -y apparmor supervisor openssh-server curl nano tmux
+
+# Docker in Docker
+RUN curl -sSL https://get.docker.com/ubuntu/ | sh
+ADD conf/wrapdocker /usr/local/bin/wrapdocker
+RUN chmod +x /usr/local/bin/wrapdocker
+VOLUME /var/lib/docker
+
+# Variable
+ENV SRC_DIR /opt
+WORKDIR $SRC_DIR
+
+# Google - Kubernetes
+ENV KUBERNETES_HOME $SRC_DIR/kubernetes
+ENV PATH $PATH:$KUBERNETES_HOME/server/bin
+ADD kubernetes-server-linux-amd64.tar.gz $SRC_DIR
+RUN echo '# Kubernetes' >> /etc/profile \
+ && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> /etc/profile \
+ && echo 'export PATH=$PATH:$KUBERNETES_HOME/server/bin' >> /etc/profile \
+ && echo '' >> /etc/profile
+
+# kubernetes minion scripts
+ENV KUBERNETES_MASTER "`cat /etc/hosts | grep kubernetes-master | awk '{printf $1}'`"
+ENV KUBERNETES_MASTER_PORT 8080
+
+# - Kube Proxy
+ENV PROXY_SCRIPTS /opt/proxy.sh
+RUN echo '#!/bin/bash' >> $PROXY_SCRIPTS \
+ && echo "kube-proxy --master=$KUBERNETES_MASTER:$KUBERNETES_MASTER_PORT" >> $PROXY_SCRIPTS \
+ && chmod a+x $PROXY_SCRIPTS
+
+# - Kubelet
+ENV CADVISOR_PORT 4194
+ENV KUBELET_PORT 10250
+ENV KUBELET_ADDRESS 0.0.0.0
+ENV KUBELET_SCRIPT /opt/kubelet.sh
+RUN echo '#!/bin/bash' >> $KUBELET_SCRIPT \
+ && echo "kubelet \\" >> $KUBELET_SCRIPT \
+ && echo "--address=$KUBELET_ADDRESS \\" >> $KUBELET_SCRIPT \
+ && echo "--port=$KUBELET_PORT \\" >> $KUBELET_SCRIPT \
+ && echo "--cadvisor_port=$CADVISOR_PORT \\" >> $KUBELET_SCRIPT \
+ && echo "--api_servers=$KUBERNETES_MASTER:$KUBERNETES_MASTER_PORT \\" >> $KUBELET_SCRIPT \
+ && echo '--hostname_override="`ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`"' >> $KUBELET_SCRIPT \
+ && chmod a+x $KUBELET_SCRIPT
+
+# Supervisor
+RUN mkdir -p /var/log/supervisor
+ADD conf/minion_supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# SSH
+RUN mkdir /var/run/sshd
+RUN sed -i 's/without-password/yes/g' /etc/ssh/sshd_config
+RUN sed -i 's/UsePAM yes/UsePAM no/g' /etc/ssh/sshd_config
+RUN sed -i 's/\#AuthorizedKeysFile/AuthorizedKeysFile/g' /etc/ssh/sshd_config
+
+# Set the root password for ssh
+RUN echo 'root:kubernetes' |chpasswd
+
+# Port
+EXPOSE 22 8080
+
+# Daemon
+CMD ["/usr/bin/supervisord"]
