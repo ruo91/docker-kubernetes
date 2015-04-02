@@ -119,7 +119,7 @@ root@etcd-cluster-2:~# echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts
 root@etcd-cluster-0:~# tmux new-session -s etcd /opt/etcd-cluster.sh
 ```
 
-etcd-clsuter-0을 제외한 etcd-cluster-1, etcd-cluster-2는 etcd의 cluster name을 따로 변경 해주고 실행 합니다.
+etcd-cluster-0을 제외한 etcd-cluster-1, etcd-cluster-2는 etcd의 cluster name을 따로 변경 해주고 실행 합니다.
 ```
 root@etcd-cluster-1:~# sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_1/g' /opt/etcd-cluster.sh
 root@etcd-cluster-1:~# tmux new-session -s etcd /opt/etcd-cluster.sh
