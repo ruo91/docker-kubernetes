@@ -58,6 +58,7 @@ ENV SCHEDULER_PORT 10251
 ENV SCHEDULER_ADDRESS 0.0.0.0 
 ENV SCHEDULER_SCRIPTS /opt/scheduler.sh
 RUN echo '#!/bin/bash' > $SCHEDULER_SCRIPTS \
+ && echo "KUBERNETES_MASTER_PORT=$KUBERNETES_MASTER_PORT \\" >> $SCHEDULER_SCRIPTS \
  && echo "kube-scheduler \\" >> $SCHEDULER_SCRIPTS \
  && echo "--address=$SCHEDULER_ADDRESS \\" >> $SCHEDULER_SCRIPTS \
  && echo "--port=$SCHEDULER_PORT \\" >> $SCHEDULER_SCRIPTS \
@@ -69,6 +70,7 @@ ENV CM_ADDRESS 0.0.0.0
 ENV CM_MACHINES kubernetes-minion-0,kubernetes-minion-1
 ENV CM_SCRIPTS /opt/controller-manager.sh
 RUN echo '#!/bin/bash' >> $CM_SCRIPTS \
+ && echo "KUBERNETES_MASTER_PORT=$KUBERNETES_MASTER_PORT \\" >> $CM_SCRIPTS \
  && echo "kube-controller-manager \\" >> $CM_SCRIPTS \
  && echo "--address=$CM_ADDRESS \\" >> $CM_SCRIPTS \
  && echo "--kubelet_port=$KUBELET_PORT \\" >> $CM_SCRIPTS \
