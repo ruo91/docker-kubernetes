@@ -53,7 +53,7 @@ root@ruo91:~# docker build --rm -t kubernetes:minion -f 03_kubernetes-minion .
 #### - Run
 ------------
 ### etcd
-etcd는 클러스터링 설정 할 것 이므로 3개의 Container를 실행 합니다.
+etcd는 클러스터링 설정을 할 것 이므로 3개의 Container를 실행 합니다.
 ```
 root@ruo91:~# docker run -d --name="etcd-cluster-0" -h "etcd-cluster-0" kubernetes:etcd
 root@ruo91:~# docker run -d --name="etcd-cluster-1" -h "etcd-cluster-1" kubernetes:etcd
@@ -117,7 +117,15 @@ root@etcd-cluster-2:~# echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts
 실행시 tmux를 사용하여 세션을 하나 만들고 그 안에서 실행 하도록 하겠습니다.
 ```
 root@etcd-cluster-0:~# tmux new-session -s etcd /opt/etcd-cluster.sh
+```
+
+etcd-clsuter-0을 제외한 etcd-cluster-1, etcd-cluster-2는 etcd의 cluster name을 따로 변경 해주고 실행 합니다.
+```
+root@etcd-cluster-1:~# sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_1/g' /opt/etcd-cluster.sh
 root@etcd-cluster-1:~# tmux new-session -s etcd /opt/etcd-cluster.sh
+```
+```
+root@etcd-cluster-2:~# sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_2/g' /opt/etcd-cluster.sh
 root@etcd-cluster-2:~# tmux new-session -s etcd /opt/etcd-cluster.sh
 ```
 
