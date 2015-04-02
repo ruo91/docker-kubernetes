@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y apparmor supervisor openssh-server curl
 RUN curl -sSL https://get.docker.com/ubuntu/ | sh
 ADD conf/wrapdocker /usr/local/bin/wrapdocker
 RUN chmod +x /usr/local/bin/wrapdocker
+VOLUME /var/run
 VOLUME /var/lib/docker
 
 # Variable
