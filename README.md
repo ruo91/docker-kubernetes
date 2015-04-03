@@ -96,37 +96,29 @@ etcd-cluster-0 etcd-cluster-1 etcd-cluster-2
 172.17.1.85
 ```
 
-SSH로 접속하여 etcd의 IP 주소를 각각의 Container에 추가 하며, 비밀번호는 kubernetes 입니다.
+SSH로 접속하여 etcd의 IP 주소를 각각의 Container에 추가 하며, 비밀번호는 kubernetes이고,
+etcd를 실행 하는데, 미리 만들어둔 "/opt/etcd-cluster.sh" 쉘 스크립트를 실행 합니다.
 ```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-0`
-root@etcd-cluster-0:~# echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts
-root@etcd-cluster-0:~# echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts
-```
-```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-1`
-root@etcd-cluster-1:~# echo '172.17.1.83 etcd-cluster-0' >> /etc/hosts
-root@etcd-cluster-1:~# echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts
-```
-```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-2` \
-root@etcd-cluster-2:~# echo '172.17.1.83 etcd-cluster-0' >> /etc/hosts
-root@etcd-cluster-2:~# echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts
-```
-
-이후 etcd를 실행 하는데, 미리 만들어둔 "/opt/etcd-cluster.sh" 쉘 스크립트를 실행 합니다.
-실행시 tmux를 사용하여 세션을 하나 만들고 그 안에서 실행 하도록 하겠습니다.
-```
-root@etcd-cluster-0:~# tmux new-session -s etcd /opt/etcd-cluster.sh
+root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-0` \
+"echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts &&
+ echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts &&
+ /opt/etcd-cluster.sh > /tmp/etcd-cluster-0.log 2>&1 &"
 ```
 
 etcd-cluster-0을 제외한 etcd-cluster-1, etcd-cluster-2는 etcd의 cluster name을 따로 변경 해주고 실행 합니다.
 ```
-root@etcd-cluster-1:~# sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_1/g' /opt/etcd-cluster.sh
-root@etcd-cluster-1:~# tmux new-session -s etcd /opt/etcd-cluster.sh
+root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-1` \
+"echo '172.17.1.83 etcd-cluster-1' >> /etc/hosts &&
+ echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts &&
+ sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_1/g' /opt/etcd-cluster.sh &&
+ /opt/etcd-cluster.sh > /tmp/etcd-cluster-1.log 2>&1 &"
 ```
 ```
-root@etcd-cluster-2:~# sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_2/g' /opt/etcd-cluster.sh
-root@etcd-cluster-2:~# tmux new-session -s etcd /opt/etcd-cluster.sh
+root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-0` \
+"echo '172.17.1.83 etcd-cluster-1' >> /etc/hosts &&
+ echo '172.17.1.84 etcd-cluster-2' >> /etc/hosts &&
+ sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_2/g' /opt/etcd-cluster.sh &&
+ /opt/etcd-cluster.sh > /tmp/etcd-cluster-0.log 2>&1 &"
 ```
 
 ### Kubernetes Master
@@ -144,27 +136,17 @@ etcd-cluster-0 etcd-cluster-1 etcd-cluster-2 kubernetes-minion-0 kubernetes-mini
 172.17.1.88
 172.17.1.89
 ```
+api-server, scheduler, controller-manager를 실행 해볼것인데, 미리 만들어진 "/opt/api-server.sh", "/opt/scheduler.sh", "/opt/controller-manager.sh" 쉘 스크립트 순으로 실행 합니다.
 ```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-master`
-root@kubernetes-master:~# echo '172.17.1.83 etcd-cluster-0' >> /etc/hosts
-root@kubernetes-master:~# echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts
-root@kubernetes-master:~# echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts
-root@kubernetes-master:~# echo '172.17.1.88 kubernetes-minion-0' >> /etc/hosts
-root@kubernetes-master:~# echo '172.17.1.89 kubernetes-minion-1' >> /etc/hosts
-```
-
-이제 api-server, scheduler, controller-manager를 실행 해볼것인데, 미리 만들어진 "/opt/api-server.sh", "/opt/scheduler.sh", "/opt/controller-manager.sh" 쉘 스크립트 순으로 실행 합니다.
-실행시 tmux를 사용하여 세션을 하나 만들고 그 안에서 화면을 3개로 나눠 실행 하도록 하겠습니다.
-(tmux 안에서 창을 나누는 것은 ctrl + b + " 를 눌러 주실때 마다 하나씩 나눠 집니다.)
-```
-root@kubernetes-master:~# tmux new-session -s master
-```
-여기서 ctrl + b + " 를 2번 눌러 줍니다.
-나눠진 화면 이동의 경우 "ctrl + b + 방향키"를 통해 원하는 위치에 이동 하면 됩니다. 
-```
-root@kubernetes-master:~# /opt/api-server.sh
-root@kubernetes-master:~# /opt/scheduler.sh
-root@kubernetes-master:~# /opt/controller-manager.sh
+root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-master` \
+"echo '172.17.1.83 etcd-cluster-0' >> /etc/hosts &&
+ echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts &&
+ echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts &&
+ echo '172.17.1.88 kubernetes-minion-0' >> /etc/hosts &&
+ echo '172.17.1.89 kubernetes-minion-1' >> /etc/hosts &&
+ /opt/api-server.sh > /tmp/api-server.log 2>&1 & &&
+ /opt/scheduler.sh > /tmp/scheduler.log 2>&1 & &&
+ /opt/controller-manager.sh > /tmp/controller-manager.log 2>&1 &"
 ```
 
 ### Kubernetes Minion
@@ -178,34 +160,20 @@ root@ruo91:~# docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-ma
 ```
 172.17.1.87
 ```
-```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-0`
-root@kubernetes-minion-0:~# echo '172.17.1.87 kubernetes-master' >> /etc/hosts
-```
-```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-1`
-root@kubernetes-minion-1:~# echo '172.17.1.87 kubernetes-master' >> /etc/hosts
-```
 
 Conatiner들의 RR(Round Robin)을 담당하는 kube-proxy와 Minion을 제어하는 agent인 kubelet 명령어를 통해 실행 할 것인데,
 미리 만들어진 "/opt/proxy.sh", "/opt/kubelet.sh" 쉘 스크립트를 통해 실행 합니다.
-실행시 tmux를 사용하여 세션을 하나 만들고 그 안에서 화면을 2개로 나눠 실행 하도록 하겠습니다.
-(tmux 안에서 창을 나누는 것은 ctrl + b + " 를 눌러 주실때 마다 하나씩 나눠 집니다.)
 ```
-root@kubernetes-minion-0:~# tmux new-session -s minion
+root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-0` \
+"echo '172.17.1.87 kubernetes-master' >> /etc/hosts &&
+ /opt/proxy.sh > /tmp/proxy.log 2>&1 & &&
+ /opt/kubelet.sh > /tmp/kubelet.log 2>&1 &"
 ```
-여기서 ctrl + b + " 를 1번 눌러 줍니다.
-나눠진 화면 이동의 경우 "ctrl + b + 방향키"를 통해 원하는 위치에 이동 하면 됩니다. 
 ```
-root@kubernetes-minion-0:~# /opt/proxy.sh
-root@kubernetes-minion-0:~# /opt/kubelet.sh
-```
-
-같은 방법으로 kubernetes-minion-1도 작업 해주시길 바랍니다.
-```
-root@kubernetes-minion-1:~# tmux new-session -s minion
-root@kubernetes-minion-1:~# /opt/proxy.sh
-root@kubernetes-minion-1:~# /opt/kubelet.sh
+root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-1` \
+"echo '172.17.1.87 kubernetes-master' >> /etc/hosts &&
+ /opt/proxy.sh > /tmp/proxy.log 2>&1 & &&
+ /opt/kubelet.sh > /tmp/kubelet.log 2>&1 &"
 ```
 
 # - Test
