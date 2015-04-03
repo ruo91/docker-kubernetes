@@ -114,7 +114,7 @@ root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-clu
  /opt/etcd-cluster.sh > /tmp/etcd-cluster-1.log 2>&1 &"
 ```
 ```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-0` \
+root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-2` \
 "echo '172.17.1.83 etcd-cluster-1' >> /etc/hosts &&
  echo '172.17.1.84 etcd-cluster-2' >> /etc/hosts &&
  sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_2/g' /opt/etcd-cluster.sh &&
