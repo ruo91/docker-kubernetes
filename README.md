@@ -102,7 +102,7 @@ etcd를 실행 하는데, 미리 만들어둔 "/opt/etcd-cluster.sh" 쉘 스크�
 root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-0` \
 "echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts &&
  echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts &&
- /opt/etcd-cluster.sh > /tmp/etcd-cluster-0.log 2>&1 &"
+ /opt/etcd-cluster.sh > /tmp/etcd-cluster.log 2>&1 &"
 ```
 
 etcd-cluster-0을 제외한 etcd-cluster-1, etcd-cluster-2는 etcd의 cluster name을 따로 변경 해주고 실행 합니다.
@@ -111,14 +111,14 @@ root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-clu
 "echo '172.17.1.83 etcd-cluster-1' >> /etc/hosts &&
  echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts &&
  sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_1/g' /opt/etcd-cluster.sh &&
- /opt/etcd-cluster.sh > /tmp/etcd-cluster-1.log 2>&1 &"
+ /opt/etcd-cluster.sh > /tmp/etcd-cluster.log 2>&1 &"
 ```
 ```
 root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-2` \
 "echo '172.17.1.83 etcd-cluster-1' >> /etc/hosts &&
  echo '172.17.1.84 etcd-cluster-2' >> /etc/hosts &&
  sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_2/g' /opt/etcd-cluster.sh &&
- /opt/etcd-cluster.sh > /tmp/etcd-cluster-0.log 2>&1 &"
+ /opt/etcd-cluster.sh > /tmp/etcd-cluster.log 2>&1 &"
 ```
 
 ### Kubernetes Master
