@@ -5,7 +5,7 @@ Dockerfile - Google Kubernetes (test only)
 # - About Kubernetes?
 ------------------
 Google의 Container 관리 도구인 Kubernetes를 Docker를 사용해서, 물리 서버 1대 만으로도 테스트를 해볼 수 있도록 만들어 봤습니다.
-Kubernetes의 대해서는 아래 주소를 또는 구글을 통해 참고 하시기 바랍니다.
+Kubernetes의 대해서는 아래 주소 또는 구글을 통해 참고 하시기 바랍니다.
 
 link: http://www.yongbok.net/blog/google-kubernetes-container-cluster-manager/
 
