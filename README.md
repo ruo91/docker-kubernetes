@@ -52,6 +52,13 @@ root@ruo91:~# docker build --rm -t kubernetes:minion -f 03_kubernetes-minion .
 
 #### - Run
 ------------
+### HostOS 설정
+Ubuntu 기준으로 /etc/default/docker.io 파일에 DOCKER_OPTS 변수에 소켓을 추가 후 Docker를 재시작 합니다.
+```
+root@ruo91:~# sed -i '/^\#DOCKER_OPTS/ s:.*:DOCKER_OPTS=\"\-\-dns 8.8.8.8 \-\-dns 8.8.4.4 \-H unix\:\/\/\/var\/run\/docker.sock\":' /etc/default/docker.io
+root@ruo91:~# service docker.io restart
+```
+
 ### etcd
 etcd는 클러스터링 설정을 할 것 이므로 3개의 Container를 실행 합니다.
 ```
