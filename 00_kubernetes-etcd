@@ -62,7 +62,7 @@ ENV ETCD_CLUSTER_HOST_0 etcd-cluster-0
 ENV ETCD_CLUSTER_HOST_1 etcd-cluster-1
 ENV ETCD_CLUSTER_HOST_2 etcd-cluster-2
 ENV ETCD_CLUSTER_STATE new
-#ENV ETCD_CLUSTER_TOKEN etcd-cluster
+ENV ETCD_CLUSTER_TOKEN etcd-cluster
 ENV ETCD_CLUSTER_SCRIPTS_NAME /opt/etcd-cluster.sh
 
 RUN echo '#!/bin/bash' > $ETCD_CLUSTER_SCRIPTS_NAME \
@@ -80,9 +80,8 @@ RUN echo '#!/bin/bash' > $ETCD_CLUSTER_SCRIPTS_NAME \
  && echo '--name $ETCD_CLUSTER_NAME_0 \' >> $ETCD_CLUSTER_SCRIPTS_NAME \
  && echo '--initial-advertise-peer-urls http://$HOST_NAME:2380 \' >> $ETCD_CLUSTER_SCRIPTS_NAME \
  && echo '--listen-peer-urls http://$HOST_NAME:2380 \' >> $ETCD_CLUSTER_SCRIPTS_NAME \
- && echo '--listen-client-urls http://$HOST_NAME:2379,http://$HOST_NAME:4001\' >> $ETCD_CLUSTER_SCRIPTS_NAME \
-# && echo '--initial-cluster-token $ETCD_CLUSTER_TOKEN \' >> $ETCD_CLUSTER_SCRIPTS_NAME \
  && echo '--initial-cluster $ETCD_CLUSTER_NAME_0=http://$ETCD_CLUSTER_HOST_0:2380,$ETCD_CLUSTER_NAME_1=http://$ETCD_CLUSTER_HOST_1:2380,$ETCD_CLUSTER_NAME_2=http://$ETCD_CLUSTER_HOST_2:2380 \' >> $ETCD_CLUSTER_SCRIPTS_NAME \
+ && echo '--initial-cluster-token $ETCD_CLUSTER_TOKEN \' >> $ETCD_CLUSTER_SCRIPTS_NAME \
  && echo '--initial-cluster-state $ETCD_CLUSTER_STATE' >> $ETCD_CLUSTER_SCRIPTS_NAME \
  && chmod a+x $ETCD_CLUSTER_SCRIPTS_NAME
 
