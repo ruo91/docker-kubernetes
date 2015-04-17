@@ -108,8 +108,7 @@ etcd를 실행 하는데, 미리 만들어둔 "/opt/etcd-cluster.sh" 쉘 스크�
 ```
 root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-0` \
 "echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts &&
- echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts &&
- /opt/etcd-cluster.sh > /tmp/etcd-cluster.log 2>&1 &"
+ echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts && /opt/etcd-cluster.sh"
 ```
 
 etcd-cluster-0을 제외한 etcd-cluster-1, etcd-cluster-2는 etcd의 cluster name을 따로 변경 해주고 실행 합니다.
@@ -118,14 +117,14 @@ root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-clu
 "echo '172.17.1.83 etcd-cluster-0' >> /etc/hosts &&
  echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts &&
  sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_1/g' /opt/etcd-cluster.sh &&
- /opt/etcd-cluster.sh > /tmp/etcd-cluster.log 2>&1 &"
+ /opt/etcd-cluster.sh"
 ```
 ```
 root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-2` \
 "echo '172.17.1.83 etcd-cluster-0' >> /etc/hosts &&
  echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts &&
  sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_2/g' /opt/etcd-cluster.sh &&
- /opt/etcd-cluster.sh > /tmp/etcd-cluster.log 2>&1 &"
+ /opt/etcd-cluster.sh"
 ```
 
 ### Kubernetes Master
@@ -151,9 +150,7 @@ root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernet
  echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts &&
  echo '172.17.1.88 kubernetes-minion-0' >> /etc/hosts &&
  echo '172.17.1.89 kubernetes-minion-1' >> /etc/hosts &&
- /opt/api-server.sh > /tmp/api-server.log 2>&1 & &&
- /opt/scheduler.sh > /tmp/scheduler.log 2>&1 & &&
- /opt/controller-manager.sh > /tmp/controller-manager.log 2>&1 &"
+ /opt/api-server.sh && /opt/scheduler.sh && /opt/controller-manager.sh"
 ```
 
 ### Kubernetes Minion
@@ -172,20 +169,22 @@ Conatiner들의 RR(Round Robin)을 담당하는 kube-proxy와 Minion을 제어�
 미리 만들어진 "/opt/proxy.sh", "/opt/kubelet.sh" 쉘 스크립트를 통해 실행 합니다.
 ```
 root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-0` \
-"echo '172.17.1.87 kubernetes-master' >> /etc/hosts &&
- /opt/proxy.sh > /tmp/proxy.log 2>&1 & &&
- /opt/kubelet.sh > /tmp/kubelet.log 2>&1 &"
+"echo '172.17.1.87 kubernetes-master' >> /etc/hosts && /opt/proxy.sh && /opt/kubelet.sh"
 ```
 ```
 root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-1` \
-"echo '172.17.1.87 kubernetes-master' >> /etc/hosts &&
- /opt/proxy.sh > /tmp/proxy.log 2>&1 & &&
- /opt/kubelet.sh > /tmp/kubelet.log 2>&1 &"
+"echo '172.17.1.87 kubernetes-master' >> /etc/hosts && /opt/proxy.sh && /opt/kubelet.sh"
 ```
 
 # - Test
 --------
-이제 테스트를 위해 kubernetes-client 서버에 접속합니다.
+이제 테스트를 위해 kubernetes-client 서버에 접속 해볼 것인데, 그전에 etcd cluster의 hostname 등록을 합니다.
+```
+root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-client` \
+"echo '172.17.1.83 etcd-cluster-0' >> /etc/hosts &&
+ echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts &&
+ echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts"
+```
 ```
 root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-client`
 ```
