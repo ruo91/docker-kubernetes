@@ -38,6 +38,7 @@ ENV KUBELET_PORT 10250
 ENV KUBERNETES_MASTER kubernetes-master
 ENV KUBERNETES_MASTER_PORT 8080
 ENV DOCKER_CIDR 10.0.42.1/16
+ENV EXTERNAL_IP `ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }'`
 ENV ETCD_SERVER http://etcd-cluster-0:4001,http://etcd-cluster-1:4001,http://etcd-cluster-2:4001
 
 # - API Server
@@ -45,12 +46,16 @@ ENV API_ADDRESS 0.0.0.0
 ENV API_SERVER_PORT 8080
 ENV API_SERVER_SCRIPTS /opt/api-server.sh
 RUN echo '#!/bin/bash' > $API_SERVER_SCRIPTS \
+ && echo '# Kubernetes' >> $API_SERVER_SCRIPTS \
+ && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> $API_SERVER_SCRIPTS \
+ && echo 'export PATH=$PATH:$KUBERNETES_HOME/server/bin' >> $API_SERVER_SCRIPTS \
  && echo "kube-apiserver \\" >> $API_SERVER_SCRIPTS \
  && echo "--port=$API_SERVER_PORT \\" >> $API_SERVER_SCRIPTS \
  && echo "--address=$API_ADDRESS \\" >> $API_SERVER_SCRIPTS \
  && echo "--kubelet_port=$KUBELET_PORT \\" >> $API_SERVER_SCRIPTS \
  && echo "--portal_net=\"$DOCKER_CIDR\" \\" >> $API_SERVER_SCRIPTS \
- && echo "--etcd_servers=$ETCD_SERVER" >> $API_SERVER_SCRIPTS \
+ && echo "--etcd_servers=$ETCD_SERVER \\" >> $API_SERVER_SCRIPTS \
+ && echo '> /tmp/api-server.log 2>&1 &' >> $API_SERVER_SCRIPTS \
  && chmod a+x $API_SERVER_SCRIPTS
 
 # - Scheduler
@@ -58,11 +63,14 @@ ENV SCHEDULER_PORT 10251
 ENV SCHEDULER_ADDRESS 0.0.0.0 
 ENV SCHEDULER_SCRIPTS /opt/scheduler.sh
 RUN echo '#!/bin/bash' > $SCHEDULER_SCRIPTS \
- && echo "KUBERNETES_MASTER_PORT=$KUBERNETES_MASTER_PORT \\" >> $SCHEDULER_SCRIPTS \
+ && echo '# Kubernetes' >> $SCHEDULER_SCRIPTS \
+ && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> $SCHEDULER_SCRIPTS \
+ && echo 'export PATH=$PATH:$KUBERNETES_HOME/server/bin' >> $SCHEDULER_SCRIPTS \
  && echo "kube-scheduler \\" >> $SCHEDULER_SCRIPTS \
  && echo "--address=$SCHEDULER_ADDRESS \\" >> $SCHEDULER_SCRIPTS \
  && echo "--port=$SCHEDULER_PORT \\" >> $SCHEDULER_SCRIPTS \
- && echo '--master=`ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`:$KUBERNETES_MASTER_PORT' >> $SCHEDULER_SCRIPTS \
+ && echo "--master=$EXTERNAL_IP:$KUBERNETES_MASTER_PORT \\" >> $SCHEDULER_SCRIPTS \
+ && echo '> /tmp/scheduler.log 2>&1 &' >> $SCHEDULER_SCRIPTS \
  && chmod a+x $SCHEDULER_SCRIPTS
 
 # - Controller Manager (Replication Controller)
@@ -70,12 +78,14 @@ ENV CM_ADDRESS 0.0.0.0
 ENV CM_MACHINES kubernetes-minion-0,kubernetes-minion-1
 ENV CM_SCRIPTS /opt/controller-manager.sh
 RUN echo '#!/bin/bash' >> $CM_SCRIPTS \
- && echo "KUBERNETES_MASTER_PORT=$KUBERNETES_MASTER_PORT \\" >> $CM_SCRIPTS \
+ && echo '# Kubernetes' >> $CM_SCRIPTS \
+ && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> $CM_SCRIPTS \
+ && echo 'export PATH=$PATH:$KUBERNETES_HOME/server/bin' >> $CM_SCRIPTS \
  && echo "kube-controller-manager \\" >> $CM_SCRIPTS \
  && echo "--address=$CM_ADDRESS \\" >> $CM_SCRIPTS \
- && echo "--kubelet_port=$KUBELET_PORT \\" >> $CM_SCRIPTS \
- && echo '--master=`ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`:$KUBERNETES_MASTER_PORT \' >> $CM_SCRIPTS \
- && echo "--machines=$CM_MACHINES" >> $CM_SCRIPTS \
+ && echo "--master=$EXTERNAL_IP:$KUBERNETES_MASTER_PORT \\" >> $CM_SCRIPTS \
+ && echo "--machines=$CM_MACHINES \\" >> $CM_SCRIPTS \
+ && echo '> /tmp/controller-manager.log 2>&1 &' >> $CM_SCRIPTS \
  && chmod a+x $CM_SCRIPTS
 
 # Supervisor
