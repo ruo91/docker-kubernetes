@@ -20,10 +20,15 @@ MAINTAINER Yongbok Kim <ruo91@yongbok.net>
 RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
 
 # The last update and install package for docker
-RUN apt-get update && apt-get install -y apparmor docker.io supervisor openssh-server curl wget nano tmux
+RUN apt-get update && apt-get install -y apt-transport-https ca-certificates lxc iptables apparmor \
+ supervisor openssh-server curl nano tmux
 
 # Docker in Docker
-#RUN wget -qO- https://get.docker.com/ | sh
+RUN curl -sSL https://get.docker.com/ubuntu/ | sh
+ADD conf/wrapdocker /usr/local/bin/wrapdocker
+RUN chmod +x /usr/local/bin/wrapdocker
+VOLUME /var/run
+VOLUME /var/lib/docker
 
 # Variable
 ENV SRC_DIR /opt
