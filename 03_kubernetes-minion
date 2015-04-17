@@ -20,13 +20,10 @@ MAINTAINER Yongbok Kim <ruo91@yongbok.net>
 RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
 
 # The last update and install package for docker
-RUN apt-get update && apt-get install -y apt-transport-https ca-certificates lxc iptables apparmor \
- supervisor openssh-server curl nano tmux
+RUN apt-get update && apt-get install -y apparmor docker.io supervisor openssh-server curl wget nano tmux
 
 # Docker in Docker
-RUN echo deb https://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list \
- && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9 \
- && apt-get update && apt-get install -y lxc-docker
+#RUN wget -qO- https://get.docker.com/ | sh
 
 # Variable
 ENV SRC_DIR /opt
@@ -44,11 +41,16 @@ RUN echo '# Kubernetes' >> /etc/profile \
 # kubernetes minion scripts
 ENV KUBERNETES_MASTER "`cat /etc/hosts | grep kubernetes-master | awk '{printf $1}'`"
 ENV KUBERNETES_MASTER_PORT 8080
+ENV EXTERNAL_IP `ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }'`
 
 # - Kube Proxy
 ENV PROXY_SCRIPTS /opt/proxy.sh
 RUN echo '#!/bin/bash' >> $PROXY_SCRIPTS \
- && echo "kube-proxy --master=$KUBERNETES_MASTER:$KUBERNETES_MASTER_PORT" >> $PROXY_SCRIPTS \
+ && echo '# Kubernetes' >> $PROXY_SCRIPTS \
+ && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> $PROXY_SCRIPTS \
+ && echo 'export PATH=$PATH:$KUBERNETES_HOME/server/bin' >> $PROXY_SCRIPTS \
+ && echo "kube-proxy --master=$KUBERNETES_MASTER:$KUBERNETES_MASTER_PORT \\" >> $PROXY_SCRIPTS \
+ && echo '> /tmp/proxy.log 2>&1 &'  >> $PROXY_SCRIPTS \
  && chmod a+x $PROXY_SCRIPTS
 
 # - Kubelet
@@ -57,12 +59,16 @@ ENV KUBELET_PORT 10250
 ENV KUBELET_ADDRESS 0.0.0.0
 ENV KUBELET_SCRIPT /opt/kubelet.sh
 RUN echo '#!/bin/bash' >> $KUBELET_SCRIPT \
+ && echo '# Kubernetes' >> $KUBELET_SCRIPT \
+ && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> $KUBELET_SCRIPT \
+ && echo 'export PATH=$PATH:$KUBERNETES_HOME/server/bin' >> $KUBELET_SCRIPT \
  && echo "kubelet \\" >> $KUBELET_SCRIPT \
  && echo "--address=$KUBELET_ADDRESS \\" >> $KUBELET_SCRIPT \
  && echo "--port=$KUBELET_PORT \\" >> $KUBELET_SCRIPT \
  && echo "--cadvisor_port=$CADVISOR_PORT \\" >> $KUBELET_SCRIPT \
  && echo "--api_servers=$KUBERNETES_MASTER:$KUBERNETES_MASTER_PORT \\" >> $KUBELET_SCRIPT \
- && echo '--hostname_override="`ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`"' >> $KUBELET_SCRIPT \
+ && echo "--hostname_override="$EXTERNAL_IP" \\" >> $KUBELET_SCRIPT \
+ && echo '> /tmp/kubelet.log 2>&1 &'  >> $KUBELET_SCRIPT \
  && chmod a+x $KUBELET_SCRIPT
 
 # Supervisor
