@@ -5,8 +5,8 @@
 # docker build --rm -t kubernetes:minion -f 03_kubernetes-minion .
 #
 # - Run
-# docker run -d --name="kubernetes-minion-0" -h "kubernetes-minion-0" --privileged=true kubernetes:minion
-# docker run -d --name="kubernetes-minion-1" -h "kubernetes-minion-1" --privileged=true kubernetes:minion
+# docker run -d --name="kubernetes-minion-0" -h "kubernetes-minion-0" --privileged=true -v /dev:/dev kubernetes:minion
+# docker run -d --name="kubernetes-minion-1" -h "kubernetes-minion-1" --privileged=true -v /dev:/dev kubernetes:minion
 #
 # - SSH
 # ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-0`
@@ -27,6 +27,11 @@ RUN apt-get update && apt-get install -y apt-transport-https ca-certificates lxc
 RUN curl -sSL https://get.docker.com/ubuntu/ | sh
 ADD conf/wrapdocker /usr/local/bin/wrapdocker
 RUN chmod +x /usr/local/bin/wrapdocker
+
+# Volume mount
+# Issue    : There are no more loopback devices available.
+# Solution : docker run -v /dev/:/dev
+# ex) docker run -d --name="kubernetes-minion-0" -h "kubernetes-minion-0" --privileged=true -v /dev:/dev kubernetes:minion
 VOLUME /var/run
 VOLUME /var/lib/docker
 
