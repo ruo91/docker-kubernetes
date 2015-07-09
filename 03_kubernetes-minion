@@ -49,37 +49,9 @@ RUN echo '# Kubernetes' >> /etc/profile \
  && echo '' >> /etc/profile
 
 # kubernetes minion scripts
-ENV KUBERNETES_MASTER "`cat /etc/hosts | grep kubernetes-master | awk '{printf $1}'`"
-ENV KUBERNETES_MASTER_PORT 8080
-ENV EXTERNAL_IP `ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }'`
-
-# - Kube Proxy
-ENV PROXY_SCRIPTS /opt/proxy.sh
-RUN echo '#!/bin/bash' >> $PROXY_SCRIPTS \
- && echo '# Kubernetes' >> $PROXY_SCRIPTS \
- && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> $PROXY_SCRIPTS \
- && echo 'export PATH=$PATH:$KUBERNETES_HOME/server/bin' >> $PROXY_SCRIPTS \
- && echo "kube-proxy --master=$KUBERNETES_MASTER:$KUBERNETES_MASTER_PORT \\" >> $PROXY_SCRIPTS \
- && echo '> /tmp/proxy.log 2>&1 &'  >> $PROXY_SCRIPTS \
- && chmod a+x $PROXY_SCRIPTS
-
-# - Kubelet
-ENV CADVISOR_PORT 4194
-ENV KUBELET_PORT 10250
-ENV KUBELET_ADDRESS 0.0.0.0
-ENV KUBELET_SCRIPT /opt/kubelet.sh
-RUN echo '#!/bin/bash' >> $KUBELET_SCRIPT \
- && echo '# Kubernetes' >> $KUBELET_SCRIPT \
- && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> $KUBELET_SCRIPT \
- && echo 'export PATH=$PATH:$KUBERNETES_HOME/server/bin' >> $KUBELET_SCRIPT \
- && echo "kubelet \\" >> $KUBELET_SCRIPT \
- && echo "--address=$KUBELET_ADDRESS \\" >> $KUBELET_SCRIPT \
- && echo "--port=$KUBELET_PORT \\" >> $KUBELET_SCRIPT \
- && echo "--cadvisor_port=$CADVISOR_PORT \\" >> $KUBELET_SCRIPT \
- && echo "--api_servers=$KUBERNETES_MASTER:$KUBERNETES_MASTER_PORT \\" >> $KUBELET_SCRIPT \
- && echo "--hostname_override="$EXTERNAL_IP" \\" >> $KUBELET_SCRIPT \
- && echo '> /tmp/kubelet.log 2>&1 &'  >> $KUBELET_SCRIPT \
- && chmod a+x $KUBELET_SCRIPT
+ADD conf/cluster/04_proxy.sh $SRC_DIR/proxy.sh
+ADD conf/cluster/05_kubelet.sh $SRC_DIR/kubelet.sh
+RUN chmod a+x $SRC_DIR/*.sh
 
 # Supervisor
 RUN mkdir -p /var/log/supervisor
