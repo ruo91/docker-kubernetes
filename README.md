@@ -119,7 +119,6 @@ etcd-cluster-2        172.17.1.3/16
 kubernetes-master     172.17.1.4/16
 kubernetes-minion-0   172.17.1.5/16
 kubernetes-minion-1   172.17.1.6/16
-kubernetes-client     172.17.1.7/16
 ```
 
 ### etcd
@@ -288,7 +287,7 @@ root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernet
 
 Container의 이름은 nginx, Label은 production, Docker images는 ruo91 사용자의 nginx 이미지, 실행 갯수는 20개, Master 서버의 API Server 정보를 입력 하여 실행 해봅니다.
 ```
-root@kubernetes-client:~# kubectl run-container nginx -l name=production --image=ruo91/nginx --replicas=20 -s 172.17.1.87:8080
+root@kubernetes-client:~# kubectl run-container nginx -l name=production --image=ruo91/nginx --replicas=20 -s 172.17.1.4:8080
 ```
 ```
 CONTROLLER   CONTAINER(S)   IMAGE(S)      SELECTOR          REPLICAS
@@ -297,7 +296,7 @@ nginx        nginx          ruo91/nginx   name=production   20
 
 이제 Pods의 정보를 확인 해보면 아직까지는 Pending으로 되어 있습니다.
 ```
-root@kubernetes-client:~# kubectl get pods -s 172.17.1.87:8080
+root@kubernetes-client:~# kubectl get pods -s 172.17.1.4:8080
 POD           IP        CONTAINER(S)   IMAGE(S)      HOST                   LABELS            STATUS    CREATED
 nginx-06cgi             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
 nginx-1todg             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
@@ -322,30 +321,30 @@ nginx-zzo1k             nginx          ruo91/nginx   kubernetes-minion-0/   name
 ```
 시간이 지나면 다음과 같이 Running으로 바뀌게 됩니다.
 ```
-root@kubernetes-client:~# kubectl get pods -s 172.17.1.87:8080
+root@kubernetes-client:~# kubectl get pods -s 172.17.1.4:8080
 ```
 ```
 POD           IP          CONTAINER(S)   IMAGE(S)      HOST                              LABELS            STATUS    CREATED
-nginx-06cgi   10.0.0.8    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.88   name=production   Running   11 minutes
-nginx-1todg   10.0.0.10   nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.88   name=production   Running   11 minutes
-nginx-2t3cn   10.0.0.4    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.89   name=production   Running   11 minutes
-nginx-7gfle   10.0.0.11   nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.89   name=production   Running   11 minutes
-nginx-b6cp5   10.0.0.6    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.88   name=production   Running   11 minutes
-nginx-i59dr   10.0.0.3    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.88   name=production   Running   11 minutes
-nginx-ibund   10.0.0.2    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.89   name=production   Running   11 minutes
-nginx-j6d0j   10.0.0.7    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.88   name=production   Running   11 minutes
-nginx-lanfl   10.0.0.4    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.88   name=production   Running   11 minutes
-nginx-nahv4   10.0.0.9    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.88   name=production   Running   11 minutes
-nginx-nyapo   10.0.0.7    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.89   name=production   Running   11 minutes
-nginx-o1huh   10.0.0.3    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.89   name=production   Running   11 minutes
-nginx-qt0et   10.0.0.5    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.88   name=production   Running   11 minutes
-nginx-ugspl   10.0.0.5    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.89   name=production   Running   11 minutes
-nginx-w51jp   10.0.0.10   nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.89   name=production   Running   11 minutes
-nginx-xa34j   10.0.0.8    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.89   name=production   Running   11 minutes
-nginx-y3jg3   10.0.0.6    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.89   name=production   Running   11 minutes
-nginx-ysuhv   10.0.0.9    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.89   name=production   Running   11 minutes
-nginx-yu4n4   10.0.0.11   nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.88   name=production   Running   11 minutes
-nginx-zzo1k   10.0.0.2    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.88   name=production   Running   11 minutes
+nginx-06cgi   10.0.0.8    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
+nginx-1todg   10.0.0.10   nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
+nginx-2t3cn   10.0.0.4    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
+nginx-7gfle   10.0.0.11   nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
+nginx-b6cp5   10.0.0.6    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
+nginx-i59dr   10.0.0.3    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
+nginx-ibund   10.0.0.2    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
+nginx-j6d0j   10.0.0.7    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
+nginx-lanfl   10.0.0.4    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
+nginx-nahv4   10.0.0.9    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
+nginx-nyapo   10.0.0.7    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
+nginx-o1huh   10.0.0.3    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
+nginx-qt0et   10.0.0.5    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
+nginx-ugspl   10.0.0.5    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
+nginx-w51jp   10.0.0.10   nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
+nginx-xa34j   10.0.0.8    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
+nginx-y3jg3   10.0.0.6    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
+nginx-ysuhv   10.0.0.9    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
+nginx-yu4n4   10.0.0.11   nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
+nginx-zzo1k   10.0.0.2    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
 ```
 
 # - Kubernetes Web UI
