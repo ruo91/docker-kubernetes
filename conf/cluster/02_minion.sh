@@ -1,3 +1,7 @@
+#------------------------------------------------#
+# Kubernetes minion start script
+# Maintainer: Yongbok Kim (ruo91@yongbok.net)
+#------------------------------------------------#
 #!/bin/bash
 ### Global ###
 # Kubernetes
@@ -95,7 +99,13 @@ function f_kubelet_manual {
 }
 
 function f_kill_of_process {
-  if [[ "$ARG_2" == "p" || "$ARG_2" == "proxy" ]]; then
+  if [ "$ARG_2" == "all" ]; then
+      echo "Kill of All Server..." && sleep 1
+      kill -9 $K8S_PROXY_SERVER_PID \
+      $K8S_KUBELET_SERVER_PID
+      echo "done"
+
+  elif [[ "$ARG_2" == "p" || "$ARG_2" == "proxy" ]]; then
       echo "Kill of Proxy..." && sleep 1
       kill -9 $K8S_PROXY_SERVER_PID
       echo "done"
@@ -114,15 +124,19 @@ function f_help {
   echo "Usage: $ARG_0 [Options] [Arguments]"
   echo
   echo "- Options"
-  echo "p, proxy		: proxy"
-  echo "kb, kubelet		: kubelet"
+  echo "p, proxy	: proxy"
+  echo "kb, kubelet	: kubelet"
   echo "k, kill		: kill of process"
   echo
   echo "- Arguments"
   echo "s, start	: Start commands"
   echo "m, manual	: Manual commands"
+  echo
+  echo "all		: kill of all server (k or kill option only.)"
+  echo "		ex) $ARG_0 k all or $ARG_0 kill all"
+  echo
   echo "p, proxy	: kill of apiserver (k or kill option only.)"
-  echo "		ex) $ARG_0 k a or $ARG_0 kill proxy"
+  echo "		ex) $ARG_0 k p or $ARG_0 kill proxy"
   echo
   echo "kb, kubelet	: kill of scheduler (k or kill option only.)"
   echo "		ex) $ARG_0 k kb or $ARG_0 kill kubelet"
