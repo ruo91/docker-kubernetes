@@ -1,3 +1,7 @@
+#------------------------------------------------#
+# Kubernetes start script
+# Maintainer: Yongbok Kim (ruo91@yongbok.net)
+#------------------------------------------------#
 #!/bin/bash
 ### Global ###
 # Kubernetes
@@ -23,7 +27,7 @@ K8S_CONTROLLER_LOGS="/tmp/controller-manager.log"
 # PID
 K8S_API_SERVER_PID="$(ps -e | grep 'kube-apiserver' | awk '{ printf $1 "\n" }')"
 K8S_SCHEDULER_SERVER_PID="$(ps -e | grep 'kube-scheduler' | awk '{ printf $1 "\n" }')"
-K8S_CONTROLLER_SERVER_PID="$(ps -e | grep 'kube-controller-manager' | awk '{ printf $1 "\n" }')"
+K8S_CONTROLLER_SERVER_PID="$(ps -e | grep 'kube-controller' | awk '{ printf $1 "\n" }')"
 
 # Functions
 function f_apiserver {
@@ -142,7 +146,14 @@ function f_controller_manager_manual {
 }
 
 function f_kill_of_process {
-  if [[ "$ARG_2" == "a" || "$ARG_2" == "api" ]]; then
+  if [ "$ARG_2" == "all" ]; then
+      echo "Kill of All Server..." && sleep 1
+      kill -9 $K8S_API_SERVER_PID \
+      $K8S_SCHEDULER_SERVER_PID \
+      $K8S_CONTROLLER_SERVER_PID
+      echo "done"
+
+  elif [[ "$ARG_2" == "a" || "$ARG_2" == "api" ]]; then
       echo "Kill of API Server..." && sleep 1
       kill -9 $K8S_API_SERVER_PID
       echo "done"
@@ -174,14 +185,18 @@ function f_help {
   echo "- Arguments"
   echo "s, start	: Start commands"
   echo "m, manual	: Manual commands"
+  echo
+  echo "all		: kill of all server (k or kill option only.)"
+  echo "		ex) $ARG_0 k all or $ARG_0 kill all"
+  echo
   echo "a, api		: kill of apiserver (k or kill option only.)"
-  echo "			ex) $ARG_0 k a or $ARG_0 kill api"
+  echo "		ex) $ARG_0 k a or $ARG_0 kill api"
   echo
   echo "s, sd		: kill of scheduler (k or kill option only.)"
-  echo "			ex) $ARG_0 k s or $ARG_0 kill sd"
+  echo "		ex) $ARG_0 k s or $ARG_0 kill sd"
   echo
   echo "c, cm		: kill of controller manager (k or kill option only)"
-  echo "			ex) $ARG_0 k c or $ARG_0 kill cm"
+  echo "		ex) $ARG_0 k c or $ARG_0 kill cm"
   echo
 }
 
