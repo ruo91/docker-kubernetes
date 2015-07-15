@@ -49,9 +49,8 @@ RUN echo '# Kubernetes' >> /etc/profile \
  && echo '' >> /etc/profile
 
 # kubernetes minion scripts
-ADD conf/cluster/04_proxy.sh $SRC_DIR/proxy.sh
-ADD conf/cluster/05_kubelet.sh $SRC_DIR/kubelet.sh
-RUN chmod a+x $SRC_DIR/*.sh
+ADD conf/cluster/02_minion.sh /bin/minion
+RUN chmod a+x /bin/minion
 
 # Supervisor
 RUN mkdir -p /var/log/supervisor
