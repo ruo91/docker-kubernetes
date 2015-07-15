@@ -12,7 +12,7 @@ link: http://www.yongbok.net/blog/google-kubernetes-container-cluster-manager/
 #### - Clone
 ------------
 Github 저장소에서 Dockerfile을 받아 옵니다.
-```
+```sh
 root@ruo91:~# git clone https://github.com/ruo91/docker-kubernetes /opt/docker-kubernetes
 ```
 
@@ -21,7 +21,7 @@ root@ruo91:~# git clone https://github.com/ruo91/docker-kubernetes /opt/docker-k
 ### HostOS
 Kubernetes는 Docker를 사용하여 빌드하기 때문에, HostOS에서 빌드 후 tar.gz 파일을 Dockerfile이 있는 경로에 복사합니다.
 (일종의 편법 입니다.)
-```
+```sh
 root@ruo91:~# git clone https://github.com/GoogleCloudPlatform/kubernetes /opt/kubernetes-source
 root@ruo91:~# cd /opt/kubernetes-source
 root@ruo91:~# build/release.sh
@@ -30,162 +30,259 @@ root@ruo91:~# cp _output/release-tars/kubernetes-server-linux-amd64.tar.gz /opt/
 ```
 
 ### etcd
-```
+```sh
 root@ruo91:~# cd /opt/docker-kubernetes
 root@ruo91:~# docker build --rm -t kubernetes:etcd -f 00_kubernetes-etcd .
 ```
 
 ### Kubernetes Client
-```
+```sh
 root@ruo91:~# docker build --rm -t kubernetes:client -f 01_kubernetes-client .
 ```
 
 ### Kubernetes Master
-```
+```sh
 root@ruo91:~# docker build --rm -t kubernetes:master -f 02_kubernetes-master .
 ```
 
 ### Kubernetes Minion
-```
+```sh
 root@ruo91:~# docker build --rm -t kubernetes:minion -f 03_kubernetes-minion .
 ```
 
 #### - Run
 ------------
 ### HostOS 설정
-Ubuntu 기준으로 /etc/default/docker.io 파일에 DOCKER_OPTS 변수에 소켓을 추가 후 Docker를 재시작 합니다.
-```
+Ubuntu 14.04 LTS 기준으로 /etc/default/docker.io 파일에 DOCKER_OPTS 변수에 소켓을 추가 후 Docker를 재시작 합니다.
+(CentOS는 /etc/sysconfig/docker 파일을 수정하시면 됩니다.)
+
+- Ubuntu
+```sh
 root@ruo91:~# sed -i '/^\#DOCKER_OPTS/ s:.*:DOCKER_OPTS=\"\-\-dns 8.8.8.8 \-\-dns 8.8.4.4 \-H unix\:\/\/\/var\/run\/docker.sock\":' /etc/default/docker.io
 root@ruo91:~# service docker.io restart
+```
+- CentOS 7
+```sh
+root@ruo91:~# sed -i '/^OPTIONS=/ s:.*:OPTIONS=\"\-\-dns 8.8.8.8 \-\-dns 8.8.4.4 \-H unix\:\/\/\/var\/run\/docker.sock\":' /etc/sysconfig/docker
+root@ruo91:~# systemctl restart docker
 ```
 
 ### etcd
 etcd는 클러스터링 설정을 할 것 이므로 3개의 Container를 실행 합니다.
-```
+```sh
 root@ruo91:~# docker run -d --name="etcd-cluster-0" -h "etcd-cluster-0" kubernetes:etcd
 root@ruo91:~# docker run -d --name="etcd-cluster-1" -h "etcd-cluster-1" kubernetes:etcd
 root@ruo91:~# docker run -d --name="etcd-cluster-2" -h "etcd-cluster-2" kubernetes:etcd
 ```
 
-### Kubernetes Client
-kubectl 명령어를 사용하기 위한 별도의 관리자 Container 이므로 1개만 실행 합니다.
-```
-root@ruo91:~# docker run -d --name="kubernetes-client" -h "kubernetes-client" kubernetes:client
-
-```
-
 ### Kubernetes Master
 1개의 Container만 실행 합니다.
-```
+```sh
 root@ruo91:~# docker run -d --name="kubernetes-master" -h "kubernetes-master" kubernetes:master
 ```
 
 ### Kubernetes Minion
 Kubernetes Client의 kubectl 명령어를 통해 작업이 보내어지면 실제로 Docker images를 받아오고 Container를 실행 하는 등의 역할을 담당 하는 곳이며,
 적절하게 2개의 Container를 실행 하도록 합니다. 실행시 --privileged 옵션이 활성화가 되어있어야 Container 안에서 Docker 사용이 가능 해집니다.
-```
+```sh
 root@ruo91:~# docker run -d --name="kubernetes-minion-0" -h "kubernetes-minion-0" --privileged=true -v /dev:/dev kubernetes:minion
 root@ruo91:~# docker run -d --name="kubernetes-minion-1" -h "kubernetes-minion-1" --privileged=true -v /dev:/dev kubernetes:minion
 ```
 
+### Kubernetes Client
+kubectl 명령어를 사용하기 위한 별도의 관리자 Container 이므로 1개만 실행 합니다.
+```sh
+root@ruo91:~# docker run -d --name="kubernetes-client" -h "kubernetes-client" kubernetes:client
+```
 # - Setting up
 -------------
+### HostOS
+분산 된 Container들의 통신을 위해서는 IP 또는 hostname을 알고 있어야 합니다만,
+Docker는 iptables를 사용해서 IP를 할당하는 방식이므로 고정 IP 설정이 어렵습니다.
+
+방법이야 많겠지만, 가장 쉽게 설정 할 수 있는 방법은 Pipework를 사용하는 것입니다.
+Pipework는 Container내에 존재하는 eth 인터페이스를 복제하여 사용자가 지정한 CIDR을 적용하는 방식입니다.
+
+따라서, Pipework를 설치 후 진행 하도록 하겠습니다.
+```sh
+root@ruo91:~# curl -o /usr/bin/docker-pipework \
+-L "https://raw.githubusercontent.com/jpetazzo/pipework/master/pipework" && \
+chmod a+x /usr/bin/docker-pipework
+```
+
+그리고, 설정할 Container의 IP 정보는 아래와 같습니다.
+```sh
+Hostname                  CIDR
+etcd-cluster-0        172.17.1.1/16
+etcd-cluster-1        172.17.1.2/16
+etcd-cluster-2        172.17.1.3/16
+kubernetes-master     172.17.1.4/16
+kubernetes-minion-0   172.17.1.5/16
+kubernetes-minion-1   172.17.1.6/16
+kubernetes-client     172.17.1.7/16
+```
+
 ### etcd
-etcd는 클러스터링 설정을 해야 하므로 각각의 Container들의 IP주소가 필요 합니다.
-Dockerfile을 보시면 아시겠지만, /etc/hosts 에 등록 된 hostname을 사용 하도록 만들어 두었기 때문에, hostname 설정만 하시면 됩니다.
-```
-root@ruo91:~# docker inspect -f '{{ .NetworkSettings.IPAddress }}' \
-etcd-cluster-0 etcd-cluster-1 etcd-cluster-2
-```
-```
-172.17.1.83
-172.17.1.84
-172.17.1.85
+etcd는 클러스터링 설정을 해야 하므로 각각의 Container들의 고정 IP주소가 필요 합니다.
+
+pipework를 통해 고정 IP로 지정 합니다.
+```sh
+root@ruo91:~# docker-pipework docker0 etcd-cluster-0 172.17.1.1/16
+root@ruo91:~# docker-pipework docker0 etcd-cluster-1 172.17.1.2/16
+root@ruo91:~# docker-pipework docker0 etcd-cluster-2 172.17.1.3/16
 ```
 
-SSH로 접속하여 etcd의 IP 주소를 각각의 Container에 추가 하며, 비밀번호는 kubernetes이고,
-etcd를 실행 하는데, 미리 만들어둔 "/opt/etcd-cluster.sh" 쉘 스크립트를 실행 합니다.
+이후 etcd를 실행하여 클러스터로 묶습니다.
+(SSH password: kubernetes)
+
+- 사용법
+```sh
+root@ruo91:~# ssh 172.17.1.1 "etcd-cluster -h"
+Usage: /bin/etcd-cluster [Options] [Arguments]
+
+- Options
+e, etcd         : etcd
+k, kill         : kill of process
+
+- Arguments
+s, start        : Start commands
+m, manual       : Manual commands
+e, etcd         : kill of apiserver (k or kill option only.)
+                ex) /bin/etcd-cluster k e or /bin/etcd-cluster kill etcd
 ```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-0` \
-"echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts &&
- echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts && /opt/etcd-cluster.sh"
+- etcd-cluster-0
+```sh
+root@ruo91:~# ssh 172.17.1.1 "etcd-cluster etcd start"
+Start ETCD...
+done
 ```
 
-etcd-cluster-0을 제외한 etcd-cluster-1, etcd-cluster-2는 etcd의 cluster name을 따로 변경 해주고 실행 합니다.
+- etcd-cluster-1
+```sh
+root@ruo91:~# ssh 172.17.1.2 "etcd-cluster etcd start"
+Start ETCD...
+done
 ```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-1` \
-"echo '172.17.1.83 etcd-cluster-0' >> /etc/hosts &&
- echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts &&
- sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_1/g' /opt/etcd-cluster.sh &&
- /opt/etcd-cluster.sh"
-```
-```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-2` \
-"echo '172.17.1.83 etcd-cluster-0' >> /etc/hosts &&
- echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts &&
- sed -i 's/\-\-name \$ETCD_CLUSTER_NAME_0/\-\-name \$ETCD_CLUSTER_NAME_2/g' /opt/etcd-cluster.sh &&
- /opt/etcd-cluster.sh"
+
+- etcd-cluster-2
+```sh
+root@ruo91:~# ssh 172.17.1.3 "etcd-cluster etcd start"
+Start ETCD...
+done
 ```
 
 ### Kubernetes Master
-Master 서버에는 kube-api-server, kube-scheduler, kube-controller-manager 명령어를 통해 서버를 실행 하는데,
-api-server는 etcd에 정보를 저장하기 때문에 etcd 클러스터의 IP를 요구하고,
-kube-controller-manager는 machines 이라는 옵션을 통해 Minion들의 IP를 요구 하므로, 관련 IP를 /etc/hosts 파일에 추가 합니다.
+Master 서버에는 kube-api-server, kube-scheduler, kube-controller-manager 명령어를 통해 서버를 실행 합니다.
+
+실행하기 전에 pipework를 통해 고정 IP로 지정 합니다.
+```sh
+root@ruo91:~# docker-pipework docker0 kubernetes-master 172.17.1.4/16
 ```
-root@ruo91:~# docker inspect -f '{{ .NetworkSettings.IPAddress }}' \
-etcd-cluster-0 etcd-cluster-1 etcd-cluster-2 kubernetes-minion-0 kubernetes-minion-1
+
+이제 api-server, scheduler, controller-manager를 실행 하겠습니다.
+
+- 사용법
+```sh
+root@ruo91:~# ssh 172.17.1.4 "k8s -h"
+Usage: /bin/k8s [Options] [Arguments]
+
+- Options
+a, api          : apiserver
+s, sd           : scheduler
+c, cm           : controller manager
+k, kill         : kill of process
+
+- Arguments
+s, start        : Start commands
+m, manual       : Manual commands
+
+all             : kill of all server (k or kill option only.)
+                ex) /bin/k8s k all or /bin/k8s kill all
+
+a, api          : kill of apiserver (k or kill option only.)
+                ex) /bin/k8s k a or /bin/k8s kill api
+
+s, sd           : kill of scheduler (k or kill option only.)
+                ex) /bin/k8s k s or /bin/k8s kill sd
+
+c, cm           : kill of controller manager (k or kill option only)
+                ex) /bin/k8s k c or /bin/k8s kill cm
 ```
+
+- api-server
+```sh
+root@ruo91:~# ssh 172.17.1.4 "k8s api start"
+Start API Server...
+done
 ```
-172.17.1.83
-172.17.1.84
-172.17.1.85
-172.17.1.88
-172.17.1.89
+
+- scheduler
+```sh
+root@ruo91:~# ssh 172.17.1.4 "k8s sd start"
+Start Scheduler...
+done
 ```
-api-server, scheduler, controller-manager를 실행 해볼것인데, 미리 만들어진 "/opt/api-server.sh", "/opt/scheduler.sh", "/opt/controller-manager.sh" 쉘 스크립트 순으로 실행 합니다.
-```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-master` \
-"echo '172.17.1.83 etcd-cluster-0' >> /etc/hosts &&
- echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts &&
- echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts &&
- echo '172.17.1.88 kubernetes-minion-0' >> /etc/hosts &&
- echo '172.17.1.89 kubernetes-minion-1' >> /etc/hosts &&
- /opt/api-server.sh && /opt/scheduler.sh && /opt/controller-manager.sh"
+
+- controller-manager
+```sh
+root@ruo91:~# ssh 172.17.1.4 "k8s cm start"
+Start Controller Manager...
+done
 ```
 
 ### Kubernetes Minion
 Minion 같은 경우에는 Container안에서 Docker를 사용할 수 있도록 만들어 졌습니다.
 이것은 실제 물리 서버에서 구성한 것과 같이 Docker images를 받아오고 Container를 실행 할 수 있도록 하기 위함입니다.
 
-Minion도 역시 실행할때 Master의 API Server를 통해 정보를 받아 오므로 Master의 hostname을 추가 해야 합니다.
-```
-root@ruo91:~# docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-master
-```
-```
-172.17.1.87
+Minion도 역시 pipework를 통해 고정 IP를 설정 합니다.
+```sh
+root@ruo91:~# docker-pipework docker0 kubernetes-minion-0 172.17.1.5/16
+root@ruo91:~# docker-pipework docker0 kubernetes-minion-1 172.17.1.6/16
 ```
 
-Conatiner들의 RR(Round Robin)을 담당하는 kube-proxy와 Minion을 제어하는 agent인 kubelet 명령어를 통해 실행 할 것인데,
-미리 만들어진 "/opt/proxy.sh", "/opt/kubelet.sh" 쉘 스크립트를 통해 실행 합니다.
-```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-0` \
-"echo '172.17.1.87 kubernetes-master' >> /etc/hosts && /opt/proxy.sh && /opt/kubelet.sh"
-```
-```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-1` \
-"echo '172.17.1.87 kubernetes-master' >> /etc/hosts && /opt/proxy.sh && /opt/kubelet.sh"
+Conatiner들의 RR(Round Robin)을 담당하는 kube-proxy와 Minion을 제어하는 agent인 kubelet 명령어를 통해 실행 할 것입니다.
+
+- 사용법
+```sh
+root@ruo91:~# ssh 172.17.1.5 "minion -h"
+Usage: /bin/minion [Options] [Arguments]
+
+- Options
+p, proxy        : proxy
+kb, kubelet     : kubelet
+k, kill         : kill of process
+
+- Arguments
+s, start        : Start commands
+m, manual       : Manual commands
+
+all             : kill of all server (k or kill option only.)
+                ex) /bin/minion k all or /bin/minion kill all
+
+p, proxy        : kill of apiserver (k or kill option only.)
+                ex) /bin/minion k p or /bin/minion kill proxy
+
+kb, kubelet     : kill of scheduler (k or kill option only.)
+                ex) /bin/minion k kb or /bin/minion kill kubelet
 ```
 
+- kube-proxy
+```sh
+root@ruo91:~# ssh 172.17.1.5 "minion proxy start"
+Start Proxy...
+done
+```
+
+- kubelet
+```sh
+root@ruo91:~# ssh 172.17.1.5 "minion kubelet start"
+Start Kubelet...
+done
+```
 # - Test
 --------
-이제 테스트를 위해 kubernetes-client 서버에 접속 해볼 것인데, 그전에 etcd cluster의 hostname 등록을 합니다.
-```
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-client` \
-"echo '172.17.1.83 etcd-cluster-0' >> /etc/hosts &&
- echo '172.17.1.84 etcd-cluster-1' >> /etc/hosts &&
- echo '172.17.1.85 etcd-cluster-2' >> /etc/hosts"
-```
-```
+이제 테스트를 위해 kubernetes-client 서버에 접속 해볼 것입니다.
+```sh
 root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-client`
 ```
 
@@ -266,7 +363,7 @@ server {
 		proxy_set_header X-Forwarded-Host $host;
 		proxy_set_header X-Forwarded-Server $host;
 		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-		proxy_pass http://172.17.1.87:8080;
+		proxy_pass http://172.17.1.4:8080;
 		client_max_body_size 10M;
 	}
 }
