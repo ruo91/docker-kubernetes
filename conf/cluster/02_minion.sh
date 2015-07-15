@@ -16,7 +16,7 @@ K8S_API_SERVER_PORT="8080"
 # Address
 K8S_API_SERVER="172.17.1.4"
 K8S_COMMON_SERVER_ADDR="0.0.0.0"
-K8S_HOST_OVERRIDE="$(ifconfig eth0 | grep 'inet addr:' | cut -d ':' -f 2 | awk '{ print $1 }')"
+K8S_HOST_OVERRIDE="$(ip a s | grep 'eth1' | grep 'inet' | cut -d '/' -f 1 | awk '{ print $2 }')"
 
 # Logs
 K8S_PROXY_LOGS="/tmp/proxy.log"
@@ -110,7 +110,7 @@ function f_kill_of_process {
       kill -9 $K8S_PROXY_SERVER_PID
       echo "done"
 
- elif [[ "$ARG_2" == "k" || "$ARG_2" == "kubelet" ]]; then
+ elif [[ "$ARG_2" == "kb" || "$ARG_2" == "kubelet" ]]; then
       echo "Kill of Kubelet..." && sleep 1
       kill -9 $K8S_KUBELET_SERVER_PID
       echo "done"
