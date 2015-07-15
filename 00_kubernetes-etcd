@@ -55,8 +55,8 @@ RUN git clone https://github.com/coreos/etcd $SRC_DIR/etcd-source \
  && echo '' >> /etc/profile
 
 # etcd cluster scripts
-ADD conf/cluster/00_etcd-cluster.sh $SRC_DIR/etcd-cluster.sh
-RUN chmod a+x $SRC_DIR/etcd-cluster.sh
+ADD conf/cluster/00_etcd-cluster.sh /bin/etcd-cluster
+RUN chmod a+x /bin/etcd-cluster
 
 # Supervisor
 RUN mkdir -p /var/log/supervisor
