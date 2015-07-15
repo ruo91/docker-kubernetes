@@ -34,10 +34,8 @@ RUN echo '# Kubernetes' >> /etc/profile \
  && echo '' >> /etc/profile
 
 # Add the kubernetes scripts
-ADD conf/cluster/01_apiserver.sh $SRC_DIR/api-server.sh
-ADD conf/cluster/02_scheduler.sh $SRC_DIR/scheduler.sh
-ADD conf/cluster/03_controller-manager.sh $SRC_DIR/controller-manager.sh
-RUN chmod a+x $SRC_DIR/*.sh
+ADD conf/cluster/01_k8s.sh /bin/k8s
+RUN chmod a+x /bin/k8s
 
 # Supervisor
 RUN mkdir -p /var/log/supervisor
@@ -53,7 +51,7 @@ RUN sed -i 's/\#AuthorizedKeysFile/AuthorizedKeysFile/g' /etc/ssh/sshd_config
 RUN echo 'root:kubernetes' |chpasswd
 
 # Port
-EXPOSE 22 8080 
+EXPOSE 22 8080
 
 # Daemon
 CMD ["/usr/bin/supervisord"]
