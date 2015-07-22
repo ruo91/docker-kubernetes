@@ -7,6 +7,9 @@ Dockerfile - Google Kubernetes (test only)
 Google의 Container 관리 도구인 Kubernetes를 Docker를 사용해서, 물리 서버 1대 만으로도 테스트를 해볼 수 있도록 만들어 봤습니다.
 Kubernetes의 대해서는 아래 주소 또는 구글을 통해 참고 하시기 바랍니다.
 
+본 문서는 Kubernetes release 1.0 버전에서 테스트 되었습니다.
+(https://github.com/googlecloudplatform/kubernetes/tree/release-1.0)
+
 link: http://www.yongbok.net/blog/google-kubernetes-container-cluster-manager/
 
 #### - Clone
@@ -265,19 +268,33 @@ kb, kubelet     : kill of scheduler (k or kill option only.)
                 ex) /bin/minion k kb or /bin/minion kill kubelet
 ```
 
-- kube-proxy
+- kube-proxy (Minion-0)
 ```sh
 root@ruo91:~# ssh 172.17.1.5 "minion proxy start"
 Start Proxy...
 done
 ```
 
-- kubelet
+- kubelet (Minion-0)
 ```sh
 root@ruo91:~# ssh 172.17.1.5 "minion kubelet start"
 Start Kubelet...
 done
 ```
+- kube-proxy (Minion-1)
+```sh
+root@ruo91:~# ssh 172.17.1.6 "minion proxy start"
+Start Proxy...
+done
+```
+
+- kubelet (Minion-1)
+```sh
+root@ruo91:~# ssh 172.17.1.6 "minion kubelet start"
+Start Kubelet...
+done
+```
+
 # - Test
 --------
 이제 테스트를 위해 kubernetes-client 서버에 접속 해볼 것입니다.
@@ -286,65 +303,66 @@ root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernet
 ```
 
 Container의 이름은 nginx, Label은 production, Docker images는 ruo91 사용자의 nginx 이미지, 실행 갯수는 20개, Master 서버의 API Server 정보를 입력 하여 실행 해봅니다.
-```
+```sh
 root@kubernetes-client:~# kubectl run-container nginx -l name=production --image=ruo91/nginx --replicas=20 -s 172.17.1.4:8080
 ```
-```
+```sh
 CONTROLLER   CONTAINER(S)   IMAGE(S)      SELECTOR          REPLICAS
 nginx        nginx          ruo91/nginx   name=production   20
 ```
 
 이제 Pods의 정보를 확인 해보면 아직까지는 Pending으로 되어 있습니다.
+이는 Minion 서버에서 해당 이미지를 다운로드 하므로 시간이 걸립니다.
 ```
 root@kubernetes-client:~# kubectl get pods -s 172.17.1.4:8080
-POD           IP        CONTAINER(S)   IMAGE(S)      HOST                   LABELS            STATUS    CREATED
-nginx-06cgi             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
-nginx-1todg             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
-nginx-2t3cn             nginx          ruo91/nginx   kubernetes-minion-1/   name=production   Pending   20 seconds
-nginx-7gfle             nginx          ruo91/nginx   kubernetes-minion-1/   name=production   Pending   20 seconds
-nginx-b6cp5             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
-nginx-i59dr             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
-nginx-ibund             nginx          ruo91/nginx   kubernetes-minion-1/   name=production   Pending   20 seconds
-nginx-j6d0j             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
-nginx-lanfl             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
-nginx-nahv4             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
-nginx-nyapo             nginx          ruo91/nginx   kubernetes-minion-1/   name=production   Pending   20 seconds
-nginx-o1huh             nginx          ruo91/nginx   kubernetes-minion-1/   name=production   Pending   20 seconds
-nginx-qt0et             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
-nginx-ugspl             nginx          ruo91/nginx   kubernetes-minion-1/   name=production   Pending   20 seconds
-nginx-w51jp             nginx          ruo91/nginx   kubernetes-minion-1/   name=production   Pending   20 seconds
-nginx-xa34j             nginx          ruo91/nginx   kubernetes-minion-1/   name=production   Pending   20 seconds
-nginx-y3jg3             nginx          ruo91/nginx   kubernetes-minion-1/   name=production   Pending   20 seconds
-nginx-ysuhv             nginx          ruo91/nginx   kubernetes-minion-1/   name=production   Pending   20 seconds
-nginx-yu4n4             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
-nginx-zzo1k             nginx          ruo91/nginx   kubernetes-minion-0/   name=production   Pending   20 seconds
+NAME          READY     STATUS    RESTARTS   AGE
+nginx-348aw   0/1       Pending   0          3s
+nginx-46xcp   0/1       Pending   0          3s
+nginx-7cyr7   0/1       Pending   0          3s
+nginx-8ph4l   0/1       Pending   0          3s
+nginx-akkqf   0/1       Pending   0          3s
+nginx-cczok   0/1       Pending   0          3s
+nginx-cstab   0/1       Pending   0          3s
+nginx-f7iam   0/1       Pending   0          3s
+nginx-g3k4h   0/1       Pending   0          3s
+nginx-ixjrq   0/1       Pending   0          3s
+nginx-j98nf   0/1       Pending   0          3s
+nginx-kii3b   0/1       Pending   0          3s
+nginx-o51a6   0/1       Pending   0          3s
+nginx-ouvh9   0/1       Pending   0          3s
+nginx-ryjc4   0/1       Pending   0          3s
+nginx-sok0g   0/1       Pending   0          3s
+nginx-tkik5   0/1       Pending   0          3s
+nginx-vt4z8   0/1       Pending   0          3s
+nginx-w35xf   0/1       Pending   0          3s
+nginx-x8iyb   0/1       Pending   0          3s
 ```
 시간이 지나면 다음과 같이 Running으로 바뀌게 됩니다.
 ```
 root@kubernetes-client:~# kubectl get pods -s 172.17.1.4:8080
 ```
 ```
-POD           IP          CONTAINER(S)   IMAGE(S)      HOST                              LABELS            STATUS    CREATED
-nginx-06cgi   10.0.0.8    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
-nginx-1todg   10.0.0.10   nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
-nginx-2t3cn   10.0.0.4    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
-nginx-7gfle   10.0.0.11   nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
-nginx-b6cp5   10.0.0.6    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
-nginx-i59dr   10.0.0.3    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
-nginx-ibund   10.0.0.2    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
-nginx-j6d0j   10.0.0.7    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
-nginx-lanfl   10.0.0.4    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
-nginx-nahv4   10.0.0.9    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
-nginx-nyapo   10.0.0.7    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
-nginx-o1huh   10.0.0.3    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
-nginx-qt0et   10.0.0.5    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
-nginx-ugspl   10.0.0.5    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
-nginx-w51jp   10.0.0.10   nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
-nginx-xa34j   10.0.0.8    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
-nginx-y3jg3   10.0.0.6    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
-nginx-ysuhv   10.0.0.9    nginx          ruo91/nginx   kubernetes-minion-1/172.17.1.6   name=production   Running   11 minutes
-nginx-yu4n4   10.0.0.11   nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
-nginx-zzo1k   10.0.0.2    nginx          ruo91/nginx   kubernetes-minion-0/172.17.1.5   name=production   Running   11 minutes
+NAME          READY     STATUS    RESTARTS   AGE
+nginx-348aw   1/1       Running   0          6m
+nginx-46xcp   1/1       Running   0          6m
+nginx-7cyr7   1/1       Running   0          6m
+nginx-8ph4l   1/1       Running   0          6m
+nginx-akkqf   1/1       Running   0          6m
+nginx-cczok   1/1       Running   0          6m
+nginx-cstab   1/1       Running   0          6m
+nginx-f7iam   1/1       Running   0          6m
+nginx-g3k4h   1/1       Running   0          6m
+nginx-ixjrq   1/1       Running   0          6m
+nginx-j98nf   1/1       Running   0          6m
+nginx-kii3b   1/1       Running   0          6m
+nginx-o51a6   1/1       Running   0          6m
+nginx-ouvh9   1/1       Running   0          6m
+nginx-ryjc4   1/1       Running   0          6m
+nginx-sok0g   1/1       Running   0          6m
+nginx-tkik5   1/1       Running   0          6m
+nginx-vt4z8   1/1       Running   0          6m
+nginx-w35xf   1/1       Running   0          6m
+nginx-x8iyb   1/1       Running   0          6m
 ```
 
 # - Kubernetes Web UI
