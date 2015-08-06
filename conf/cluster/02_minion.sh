@@ -135,10 +135,10 @@ function f_help {
   echo "all		: kill of all server (k or kill option only.)"
   echo "		ex) $ARG_0 k all or $ARG_0 kill all"
   echo
-  echo "p, proxy	: kill of apiserver (k or kill option only.)"
+  echo "p, proxy	: kill of proxy (k or kill option only.)"
   echo "		ex) $ARG_0 k p or $ARG_0 kill proxy"
   echo
-  echo "kb, kubelet	: kill of scheduler (k or kill option only.)"
+  echo "kb, kubelet	: kill of kubelet (k or kill option only.)"
   echo "		ex) $ARG_0 k kb or $ARG_0 kill kubelet"
   echo
 }

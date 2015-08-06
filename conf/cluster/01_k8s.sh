@@ -195,7 +195,7 @@ function f_help {
   echo "s, sd		: kill of scheduler (k or kill option only.)"
   echo "		ex) $ARG_0 k s or $ARG_0 kill sd"
   echo
-  echo "c, cm		: kill of controller manager (k or kill option only)"
+  echo "c, cm		: kill of controller manager (k or kill option only.)"
   echo "		ex) $ARG_0 k c or $ARG_0 kill cm"
   echo
 }
