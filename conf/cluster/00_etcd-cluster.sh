@@ -125,7 +125,7 @@ function f_help {
   echo "- Arguments"
   echo "s, start	: Start commands"
   echo "m, manual	: Manual commands"
-  echo "e, etcd		: kill of apiserver (k or kill option only.)"
+  echo "e, etcd		: kill of etcd (k or kill option only.)"
   echo "		ex) $ARG_0 k e or $ARG_0 kill etcd"
   echo
 }
