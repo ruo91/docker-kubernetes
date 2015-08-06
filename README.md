@@ -149,7 +149,7 @@ k, kill         : kill of process
 - Arguments
 s, start        : Start commands
 m, manual       : Manual commands
-e, etcd         : kill of apiserver (k or kill option only.)
+e, etcd         : kill of etcd (k or kill option only.)
                 ex) /bin/etcd-cluster k e or /bin/etcd-cluster kill etcd
 ```
 - etcd-cluster-0
@@ -207,7 +207,7 @@ a, api          : kill of apiserver (k or kill option only.)
 s, sd           : kill of scheduler (k or kill option only.)
                 ex) /bin/k8s k s or /bin/k8s kill sd
 
-c, cm           : kill of controller manager (k or kill option only)
+c, cm           : kill of controller manager (k or kill option only.)
                 ex) /bin/k8s k c or /bin/k8s kill cm
 ```
 
@@ -261,10 +261,10 @@ m, manual       : Manual commands
 all             : kill of all server (k or kill option only.)
                 ex) /bin/minion k all or /bin/minion kill all
 
-p, proxy        : kill of apiserver (k or kill option only.)
+p, proxy        : kill of proxy (k or kill option only.)
                 ex) /bin/minion k p or /bin/minion kill proxy
 
-kb, kubelet     : kill of scheduler (k or kill option only.)
+kb, kubelet     : kill of kubelet (k or kill option only.)
                 ex) /bin/minion k kb or /bin/minion kill kubelet
 ```
 
