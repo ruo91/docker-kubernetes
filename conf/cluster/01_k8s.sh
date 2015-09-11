@@ -15,7 +15,7 @@ K8S_API_SERVER_PORT="8080"
 
 # Address
 K8S_API_SERVER="172.17.1.4"
-K8S_POTAL_NET_CIDR="10.0.42.1/16"
+K8S_SERVICE_CLUSTER_IP_RANGE="10.0.42.1/16"
 K8S_COMMON_SERVER_ADDR="0.0.0.0"
 K8S_ETCD_SERVER="http://172.17.1.1:$K8S_ETCD_PORT,http://172.17.1.2:$K8S_ETCD_PORT,http://172.17.1.3:$K8S_ETCD_PORT"
 
@@ -35,10 +35,10 @@ function f_apiserver {
   kube-apiserver \
   --port=$K8S_API_SERVER_PORT \
   --address=$K8S_COMMON_SERVER_ADDR \
-  --kubelet_port=$K8S_KUBELET_PORT \
-  --portal_net=$K8S_POTAL_NET_CIDR \
+  --kubelet-port=$K8S_KUBELET_PORT \
+  --service-cluster-ip-range=$K8S_SERVICE_CLUSTER_IP_RANGE \
   --etcd_servers=$K8S_ETCD_SERVER \
-  > $K8S_API_SERVER_LOGS 2>&1 &
+  --v=0 > $K8S_API_SERVER_LOGS 2>&1 &
   echo "done"
 }
 
@@ -47,7 +47,7 @@ function f_scheduler {
   kube-scheduler \
   --address=$K8S_COMMON_SERVER_ADDR \
   --master=$K8S_API_SERVER:$K8S_API_SERVER_PORT \
-  > $K8S_SCHEDULER_LOGS 2>&1 &
+  --v=0 > $K8S_SCHEDULER_LOGS 2>&1 &
   echo "done"
 }
 
@@ -56,7 +56,7 @@ function f_controller_manager {
   kube-controller-manager \
   --address=$K8S_COMMON_SERVER_ADDR \
   --master=$K8S_API_SERVER:$K8S_API_SERVER_PORT \
-  > $K8S_CONTROLLER_LOGS 2>&1 &
+  --v=0 > $K8S_CONTROLLER_LOGS 2>&1 &
   echo "done"
 }
 
@@ -80,7 +80,7 @@ function f_apiserver_manual {
   read K8S_KUBELET_PORT
   echo
 
-  echo -ne "\033[33m- Potal Net CIDR \033[0m \n"
+  echo -ne "\033[33m- Service Cluster IP Range \033[0m \n"
   echo -ne "\033[33m- ex) 10.0.42.1/16 \033[0m \n"
   echo -ne "\033[33m- Input: \033[0m"
   read K8S_POTAL_NET_CIDR
@@ -96,10 +96,10 @@ function f_apiserver_manual {
   kube-apiserver \
   --port=$K8S_API_SERVER_PORT \
   --address=$K8S_API_SERVICE_ADDR \
-  --kubelet_port=$K8S_KUBELET_PORT \
-  --portal_net=$K8S_POTAL_NET_CIDR \
+  --kubelet-port=$K8S_KUBELET_PORT \
+  --service-cluster-ip-range=$K8S_SERVICE_CLUSTER_IP_RANGE \
   --etcd_servers=$K8S_ETCD_SERVER \
-  > $K8S_API_SERVER_LOGS 2>&1 &
+  --v=0 > $K8S_API_SERVER_LOGS 2>&1 &
   echo "done"
 }
 
@@ -120,7 +120,7 @@ function f_scheduler_manual {
   kube-scheduler \
   --address=$K8S_SCHEDULER_SERVICE_ADDR \
   --master=$K8S_API_SERVER \
-  > $K8S_SCHEDULER_LOGS 2>&1 &
+  --v=0 > $K8S_SCHEDULER_LOGS 2>&1 &
   echo "done"
 }
 
@@ -141,7 +141,7 @@ function f_controller_manager_manual {
   kube-controller-manager \
   --address=$K8S_CONTROLLER_SERVICE_ADDR \
   --master=$K8S_API_SERVER \
-  > $K8S_CONTROLLER_LOGS 2>&1 &
+  --v=0 > $K8S_CONTROLLER_LOGS 2>&1 &
   echo "done"
 }
 
