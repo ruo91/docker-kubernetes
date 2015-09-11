@@ -13,7 +13,7 @@
 # ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-1`
 #
 # Use the base images
-FROM ubuntu:14.04
+FROM ubuntu:15.04
 MAINTAINER Yongbok Kim <ruo91@yongbok.net>
 
 # Change the repository
