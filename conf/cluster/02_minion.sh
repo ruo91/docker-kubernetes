@@ -31,7 +31,7 @@ function f_proxy {
   echo "Start Proxy..."  && sleep 1
   kube-proxy \
   --master=$K8S_API_SERVER:$K8S_API_SERVER_PORT \
-  > $K8S_PROXY_LOGS 2>&1 &
+  --v=0 > $K8S_PROXY_LOGS 2>&1 &
   echo "done"
 }
 
@@ -40,10 +40,10 @@ function f_kubelet {
   kubelet \
   --address=$K8S_COMMON_SERVER_ADDR \
   --port=$K8S_KUBELET_PORT \
-  --cadvisor_port=$K8S_CADVISOR_PORT \
-  --api_servers=$K8S_API_SERVER:$K8S_API_SERVER_PORT \
-  --hostname_override=$K8S_HOST_OVERRIDE \
-  > $K8S_KUBELET_LOGS 2>&1 &
+  --cadvisor-port=$K8S_CADVISOR_PORT \
+  --api-servers=$K8S_API_SERVER:$K8S_API_SERVER_PORT \
+  --hostname-override=$K8S_HOST_OVERRIDE \
+  --v=0 > $K8S_KUBELET_LOGS 2>&1 &
   echo "done"
 }
 
@@ -58,7 +58,7 @@ function f_proxy_manual {
   echo "Start Proxy..."  && sleep 1
   kube-proxy \
   --master=$K8S_API_SERVER \
-  > $K8S_PROXY_LOGS 2>&1 &
+  --v=0 > $K8S_PROXY_LOGS 2>&1 &
   echo "done"
 }
 
@@ -90,11 +90,11 @@ function f_kubelet_manual {
   echo "Start Kubelet..." && sleep 1
   kubelet \
   --port=$K8S_KUBELET_PORT \
-  --cadvisor_port=$K8S_CADVISOR_PORT \
+  --cadvisor-port=$K8S_CADVISOR_PORT \
   --address=$K8S_KUBELET_SERVICE_ADDR \
-  --api_servers=$K8S_API_SERVER \
-  --hostname_override=$K8S_HOST_OVERRIDE \
-  > $K8S_KUBELET_LOGS 2>&1 &
+  --api-servers=$K8S_API_SERVER \
+  --hostname-override=$K8S_HOST_OVERRIDE \
+  --v=0 > $K8S_KUBELET_LOGS 2>&1 &
   echo "done"
 }
 
