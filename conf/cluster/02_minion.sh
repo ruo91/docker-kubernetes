@@ -18,6 +18,9 @@ K8S_API_SERVER="172.17.1.4"
 K8S_COMMON_SERVER_ADDR="0.0.0.0"
 K8S_HOST_OVERRIDE="$(ip a s | grep 'eth1' | grep 'inet' | cut -d '/' -f 1 | awk '{ print $2 }')"
 
+# Options
+PROXY_MODE="iptables"
+
 # Logs
 K8S_PROXY_LOGS="/tmp/proxy.log"
 K8S_KUBELET_LOGS="/tmp/kubelet.log"
@@ -30,6 +33,7 @@ K8S_KUBELET_SERVER_PID="$(ps -e | grep 'kubelet' | awk '{ printf $1 "\n" }')"
 function f_proxy {
   echo "Start Proxy..."  && sleep 1
   kube-proxy \
+  --proxy-mode="$PROXY_MODE" \
   --master=$K8S_API_SERVER:$K8S_API_SERVER_PORT \
   --v=0 > $K8S_PROXY_LOGS 2>&1 &
   echo "done"
@@ -57,6 +61,7 @@ function f_proxy_manual {
 
   echo "Start Proxy..."  && sleep 1
   kube-proxy \
+  --proxy-mode="$PROXY_MODE" \
   --master=$K8S_API_SERVER \
   --v=0 > $K8S_PROXY_LOGS 2>&1 &
   echo "done"

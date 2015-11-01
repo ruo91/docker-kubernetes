@@ -19,10 +19,10 @@ FROM ubuntu:15.04
 MAINTAINER Yongbok Kim <ruo91@yongbok.net>
 
 # Change the repository
-RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
+#RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
 
 # The last update and install package for docker
-RUN apt-get update && apt-get install -y supervisor openssh-server git-core curl nano tmux build-essential
+RUN apt-get update && apt-get install -y supervisor openssh-server git-core curl nano build-essential
 
 # Variable
 ENV SRC_DIR /opt
@@ -55,12 +55,12 @@ RUN git clone https://github.com/coreos/etcd $SRC_DIR/etcd-source \
  && echo '' >> /etc/profile
 
 # etcd cluster scripts
-ADD conf/cluster/00_etcd-cluster.sh /bin/etcd-cluster
-RUN chmod a+x /bin/etcd-cluster
+ADD conf/cluster/00_etcd-cluster.sh /bin/etcd-cluster.sh
+RUN chmod a+x /bin/etcd-cluster.sh
 
 # Supervisor
 RUN mkdir -p /var/log/supervisor
-ADD conf/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+ADD conf/supervisord/00_default.conf /etc/supervisor/conf.d/supervisord.conf
 
 # SSH
 RUN mkdir /var/run/sshd

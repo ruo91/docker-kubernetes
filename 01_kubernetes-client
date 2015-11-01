@@ -15,10 +15,10 @@ FROM ubuntu:15.04
 MAINTAINER Yongbok Kim <ruo91@yongbok.net>
 
 # Change the repository
-RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
+#RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
 
 # The last update and install package for docker
-RUN apt-get update && apt-get install -y supervisor openssh-server nano tmux
+RUN apt-get update && apt-get install -y supervisor openssh-server nano net-tools iputils-ping
 
 # Variable
 ENV SRC_DIR /opt
@@ -26,8 +26,11 @@ WORKDIR $SRC_DIR
 
 # Google - Kubernetes
 ENV KUBERNETES_HOME $SRC_DIR/kubernetes
-ENV PATH $PATH:$KUBERNETES_HOME/server/bin
+ENV PATH $PATH:$KUBERNETES_HOME/client/bin
 ADD kubernetes-client-linux-amd64.tar.gz $SRC_DIR
+ADD conf/cluster/06_nginx.yaml /opt/nginx.yaml
+ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-rc.yaml /opt/kube-ui-rc.yaml
+ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-svc.yaml /opt/kube-ui-svc.yaml
 RUN echo '# Kubernetes' >> /etc/profile \
  && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> /etc/profile \
  && echo 'export PATH=$PATH:$KUBERNETES_HOME/client/bin' >> /etc/profile \
@@ -35,7 +38,7 @@ RUN echo '# Kubernetes' >> /etc/profile \
 
 # Supervisor
 RUN mkdir -p /var/log/supervisor
-ADD conf/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+ADD conf/supervisord/00_default.conf /etc/supervisor/conf.d/supervisord.conf
 
 # SSH
 RUN mkdir /var/run/sshd

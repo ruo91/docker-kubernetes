@@ -15,7 +15,7 @@ K8S_API_SERVER_PORT="8080"
 
 # Address
 K8S_API_SERVER="172.17.1.4"
-K8S_SERVICE_CLUSTER_IP_RANGE="10.0.42.1/16"
+K8S_SERVICE_CLUSTER_IP_RANGE="$(ip a s flannel.1 | grep -v 'inet6' | grep 'inet' | cut -d ':' -f 2 | awk '{ print $2}' | sed 's/0\/8/0\/24/g')"
 K8S_COMMON_SERVER_ADDR="0.0.0.0"
 K8S_ETCD_SERVER="http://172.17.1.1:$K8S_ETCD_PORT,http://172.17.1.2:$K8S_ETCD_PORT,http://172.17.1.3:$K8S_ETCD_PORT"
 
@@ -36,6 +36,7 @@ function f_apiserver {
   --port=$K8S_API_SERVER_PORT \
   --address=$K8S_COMMON_SERVER_ADDR \
   --kubelet-port=$K8S_KUBELET_PORT \
+  --external-hostname="$K8S_API_SERVER" \
   --service-cluster-ip-range=$K8S_SERVICE_CLUSTER_IP_RANGE \
   --etcd_servers=$K8S_ETCD_SERVER \
   --v=0 > $K8S_API_SERVER_LOGS 2>&1 &
@@ -97,6 +98,7 @@ function f_apiserver_manual {
   --port=$K8S_API_SERVER_PORT \
   --address=$K8S_API_SERVICE_ADDR \
   --kubelet-port=$K8S_KUBELET_PORT \
+  --external-hostname="$K8S_API_SERVER" \
   --service-cluster-ip-range=$K8S_SERVICE_CLUSTER_IP_RANGE \
   --etcd_servers=$K8S_ETCD_SERVER \
   --v=0 > $K8S_API_SERVER_LOGS 2>&1 &

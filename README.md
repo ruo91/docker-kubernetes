@@ -2,15 +2,14 @@ Dockerfile - Google Kubernetes (test only)
 =====================================
 ![0]
 
-# - About Kubernetes?
-------------------
-Google의 Container 관리 도구인 Kubernetes를 Docker를 사용해서, 물리 서버 1대 만으로도 테스트를 해볼 수 있도록 만들어 봤습니다.
-Kubernetes의 대해서는 아래 주소 또는 구글을 통해 참고 하시기 바랍니다.
+# - Google Kubernetes?
+-----------------------
+Container를 쉽게 관리 할 수 있도록 만든 오픈소스 도구 입니다.
+참고: http://www.yongbok.net/blog/google-kubernetes-container-cluster-manager/
 
-본 문서는 Kubernetes release 1.0 버전에서 테스트 되었습니다.
-(https://github.com/googlecloudplatform/kubernetes/tree/release-1.0)
-
-link: http://www.yongbok.net/blog/google-kubernetes-container-cluster-manager/
+# - Dockerfile로 만들게 된 이유가 무엇입니까?
+--------------------------------------------
+실제와 같은 환경을 구축 및 테스트 할때 시간 비용을 줄이고자 만들었습니다.
 
 #### - Clone
 ------------
@@ -21,354 +20,94 @@ root@ruo91:~# git clone https://github.com/ruo91/docker-kubernetes /opt/docker-k
 
 #### - Build
 ------------
-### HostOS
 Kubernetes는 Docker를 사용하여 빌드하기 때문에, HostOS에서 빌드 후 tar.gz 파일을 Dockerfile이 있는 경로에 복사합니다.
 (일종의 편법 입니다.)
 ```sh
-root@ruo91:~# git clone https://github.com/GoogleCloudPlatform/kubernetes /opt/kubernetes-source
+root@ruo91:~# git clone https://github.com/kubernetes/kubernetes /opt/kubernetes-source
 root@ruo91:~# cd /opt/kubernetes-source
-root@ruo91:~# build/release.sh
+root@ruo91:~# git checkout -b release-1.1 origin/release-1.1
+root@ruo91:~# make quick-release
 root@ruo91:~# cp _output/release-tars/kubernetes-client-linux-amd64.tar.gz /opt/docker-kubernetes
 root@ruo91:~# cp _output/release-tars/kubernetes-server-linux-amd64.tar.gz /opt/docker-kubernetes
 ```
 
-### etcd
+이후 docker-kubernetes.sh 쉘스크립트를 통해 etcd, master, minion, client를 빌드 합니다.
 ```sh
 root@ruo91:~# cd /opt/docker-kubernetes
-root@ruo91:~# docker build --rm -t kubernetes:etcd -f 00_kubernetes-etcd .
-```
-
-### Kubernetes Client
-```sh
-root@ruo91:~# docker build --rm -t kubernetes:client -f 01_kubernetes-client .
-```
-
-### Kubernetes Master
-```sh
-root@ruo91:~# docker build --rm -t kubernetes:master -f 02_kubernetes-master .
-```
-
-### Kubernetes Minion
-```sh
-root@ruo91:~# docker build --rm -t kubernetes:minion -f 03_kubernetes-minion .
+root@ruo91:~# ./docker-kubernetes.sh build start
 ```
 
 #### - Run
 ------------
-### HostOS 설정
-Ubuntu 14.04 LTS 기준으로 /etc/default/docker.io 파일에 DOCKER_OPTS 변수에 소켓을 추가 후 Docker를 재시작 합니다.
-(CentOS는 /etc/sysconfig/docker 파일을 수정하시면 됩니다.)
-
-- Ubuntu
+etcd x3, master x1, minion x2, client x1 개의 컨테이너를 실행 합니다.
 ```sh
-root@ruo91:~# sed -i '/^\#DOCKER_OPTS/ s:.*:DOCKER_OPTS=\"\-\-dns 8.8.8.8 \-\-dns 8.8.4.4 \-H unix\:\/\/\/var\/run\/docker.sock\":' /etc/default/docker.io
-root@ruo91:~# service docker.io restart
-```
-- CentOS 7
-```sh
-root@ruo91:~# sed -i '/^OPTIONS=/ s:.*:OPTIONS=\"\-\-dns 8.8.8.8 \-\-dns 8.8.4.4 \-H unix\:\/\/\/var\/run\/docker.sock\":' /etc/sysconfig/docker
-root@ruo91:~# systemctl restart docker
-```
-
-### etcd
-etcd는 클러스터링 설정을 할 것 이므로 3개의 Container를 실행 합니다.
-```sh
-root@ruo91:~# docker run -d --name="etcd-cluster-0" -h "etcd-cluster-0" kubernetes:etcd
-root@ruo91:~# docker run -d --name="etcd-cluster-1" -h "etcd-cluster-1" kubernetes:etcd
-root@ruo91:~# docker run -d --name="etcd-cluster-2" -h "etcd-cluster-2" kubernetes:etcd
-```
-
-### Kubernetes Master
-1개의 Container만 실행 합니다.
-```sh
-root@ruo91:~# docker run -d --name="kubernetes-master" -h "kubernetes-master" kubernetes:master
-```
-
-### Kubernetes Minion
-Kubernetes Client의 kubectl 명령어를 통해 작업이 보내어지면 실제로 Docker images를 받아오고 Container를 실행 하는 등의 역할을 담당 하는 곳이며,
-적절하게 2개의 Container를 실행 하도록 합니다. 실행시 --privileged 옵션이 활성화가 되어있어야 Container 안에서 Docker 사용이 가능 해집니다.
-```sh
-root@ruo91:~# docker run -d --name="kubernetes-minion-0" -h "kubernetes-minion-0" --privileged=true -v /dev:/dev kubernetes:minion
-root@ruo91:~# docker run -d --name="kubernetes-minion-1" -h "kubernetes-minion-1" --privileged=true -v /dev:/dev kubernetes:minion
-```
-
-### Kubernetes Client
-kubectl 명령어를 사용하기 위한 별도의 관리자 Container 이므로 1개만 실행 합니다.
-```sh
-root@ruo91:~# docker run -d --name="kubernetes-client" -h "kubernetes-client" kubernetes:client
-```
-# - Setting up
--------------
-### HostOS
-분산 된 Container들의 통신을 위해서는 IP 또는 hostname을 알고 있어야 합니다만,
-Docker는 iptables를 사용해서 IP를 할당하는 방식이므로 고정 IP 설정이 어렵습니다.
-
-방법이야 많겠지만, 가장 쉽게 설정 할 수 있는 방법은 Pipework를 사용하는 것입니다.
-Pipework는 Container내에 존재하는 eth 인터페이스를 복제하여 사용자가 지정한 CIDR을 적용하는 방식입니다.
-
-따라서, Pipework를 설치 후 진행 하도록 하겠습니다.
-```sh
-root@ruo91:~# curl -o /usr/bin/docker-pipework \
--L "https://raw.githubusercontent.com/jpetazzo/pipework/master/pipework" && \
-chmod a+x /usr/bin/docker-pipework
-```
-
-그리고, 설정할 Container의 IP 정보는 아래와 같습니다.
-```sh
-Hostname                  CIDR
-etcd-cluster-0        172.17.1.1/16
-etcd-cluster-1        172.17.1.2/16
-etcd-cluster-2        172.17.1.3/16
-kubernetes-master     172.17.1.4/16
-kubernetes-minion-0   172.17.1.5/16
-kubernetes-minion-1   172.17.1.6/16
-```
-
-### etcd
-etcd는 클러스터링 설정을 해야 하므로 각각의 Container들의 고정 IP주소가 필요 합니다.
-
-pipework를 통해 고정 IP로 지정 합니다.
-```sh
-root@ruo91:~# docker-pipework docker0 etcd-cluster-0 172.17.1.1/16
-root@ruo91:~# docker-pipework docker0 etcd-cluster-1 172.17.1.2/16
-root@ruo91:~# docker-pipework docker0 etcd-cluster-2 172.17.1.3/16
-```
-
-이후 etcd를 실행하여 클러스터로 묶습니다.
-(SSH password: kubernetes)
-
-- 사용법
-```sh
-root@ruo91:~# ssh 172.17.1.1 "etcd-cluster -h"
-Usage: /bin/etcd-cluster [Options] [Arguments]
-
-- Options
-e, etcd         : etcd
-k, kill         : kill of process
-
-- Arguments
-s, start        : Start commands
-m, manual       : Manual commands
-e, etcd         : kill of etcd (k or kill option only.)
-                ex) /bin/etcd-cluster k e or /bin/etcd-cluster kill etcd
-```
-- etcd-cluster-0
-```sh
-root@ruo91:~# ssh 172.17.1.1 "etcd-cluster etcd start"
-Start ETCD...
-done
-```
-
-- etcd-cluster-1
-```sh
-root@ruo91:~# ssh 172.17.1.2 "etcd-cluster etcd start"
-Start ETCD...
-done
-```
-
-- etcd-cluster-2
-```sh
-root@ruo91:~# ssh 172.17.1.3 "etcd-cluster etcd start"
-Start ETCD...
-done
-```
-
-### Kubernetes Master
-Master 서버에는 kube-api-server, kube-scheduler, kube-controller-manager 명령어를 통해 서버를 실행 합니다.
-
-실행하기 전에 pipework를 통해 고정 IP로 지정 합니다.
-```sh
-root@ruo91:~# docker-pipework docker0 kubernetes-master 172.17.1.4/16
-```
-
-이제 api-server, scheduler, controller-manager를 실행 하겠습니다.
-
-- 사용법
-```sh
-root@ruo91:~# ssh 172.17.1.4 "k8s -h"
-Usage: /bin/k8s [Options] [Arguments]
-
-- Options
-a, api          : apiserver
-s, sd           : scheduler
-c, cm           : controller manager
-k, kill         : kill of process
-
-- Arguments
-s, start        : Start commands
-m, manual       : Manual commands
-
-all             : kill of all server (k or kill option only.)
-                ex) /bin/k8s k all or /bin/k8s kill all
-
-a, api          : kill of apiserver (k or kill option only.)
-                ex) /bin/k8s k a or /bin/k8s kill api
-
-s, sd           : kill of scheduler (k or kill option only.)
-                ex) /bin/k8s k s or /bin/k8s kill sd
-
-c, cm           : kill of controller manager (k or kill option only.)
-                ex) /bin/k8s k c or /bin/k8s kill cm
-```
-
-- api-server
-```sh
-root@ruo91:~# ssh 172.17.1.4 "k8s api start"
-Start API Server...
-done
-```
-
-- scheduler
-```sh
-root@ruo91:~# ssh 172.17.1.4 "k8s sd start"
-Start Scheduler...
-done
-```
-
-- controller-manager
-```sh
-root@ruo91:~# ssh 172.17.1.4 "k8s cm start"
-Start Controller Manager...
-done
-```
-
-### Kubernetes Minion
-Minion 같은 경우에는 Container안에서 Docker를 사용할 수 있도록 만들어 졌습니다.
-이것은 실제 물리 서버에서 구성한 것과 같이 Docker images를 받아오고 Container를 실행 할 수 있도록 하기 위함입니다.
-
-Minion도 역시 pipework를 통해 고정 IP를 설정 합니다.
-```sh
-root@ruo91:~# docker-pipework docker0 kubernetes-minion-0 172.17.1.5/16
-root@ruo91:~# docker-pipework docker0 kubernetes-minion-1 172.17.1.6/16
-```
-
-Conatiner들의 RR(Round Robin)을 담당하는 kube-proxy와 Minion을 제어하는 agent인 kubelet 명령어를 통해 실행 할 것입니다.
-
-- 사용법
-```sh
-root@ruo91:~# ssh 172.17.1.5 "minion -h"
-Usage: /bin/minion [Options] [Arguments]
-
-- Options
-p, proxy        : proxy
-kb, kubelet     : kubelet
-k, kill         : kill of process
-
-- Arguments
-s, start        : Start commands
-m, manual       : Manual commands
-
-all             : kill of all server (k or kill option only.)
-                ex) /bin/minion k all or /bin/minion kill all
-
-p, proxy        : kill of proxy (k or kill option only.)
-                ex) /bin/minion k p or /bin/minion kill proxy
-
-kb, kubelet     : kill of kubelet (k or kill option only.)
-                ex) /bin/minion k kb or /bin/minion kill kubelet
-```
-
-- kube-proxy (Minion-0)
-```sh
-root@ruo91:~# ssh 172.17.1.5 "minion proxy start"
-Start Proxy...
-done
-```
-
-- kubelet (Minion-0)
-```sh
-root@ruo91:~# ssh 172.17.1.5 "minion kubelet start"
-Start Kubelet...
-done
-```
-- kube-proxy (Minion-1)
-```sh
-root@ruo91:~# ssh 172.17.1.6 "minion proxy start"
-Start Proxy...
-done
-```
-
-- kubelet (Minion-1)
-```sh
-root@ruo91:~# ssh 172.17.1.6 "minion kubelet start"
-Start Kubelet...
-done
+root@ruo91:~# ./docker-kubernetes.sh run yes
 ```
 
 # - Test
 --------
-이제 테스트를 위해 kubernetes-client 서버에 접속 해볼 것입니다.
+docker exec 명령어를 통해 kubernetes-client 컨테이너에서 테스트 해볼 것입니다.
+(-s 옵션은 API Server의 IP와 포트를 지정 해주면 됩니다.)
 ```sh
-root@ruo91:~# ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-client`
+root@ruo91:~# docker exec kubernetes-client kubectl get services -s 172.17.1.4:8080
+docker exec kubernetes-client kubectl get services -s 172.17.1.4:8080
+NAME         CLUSTER_IP   EXTERNAL_IP   PORT(S)   SELECTOR   AGE
+kubernetes   10.0.0.1     <none>        443/TCP   <none>     2m
+```
+Minion 서버에 10개의 Nginx를 실행 해보도록 하겠습니다. 
+```sh
+root@ruo91:~#  docker exec kubernetes-client kubectl create -f /opt/nginx.yaml -s 172.17.1.4:8080
+replicationcontroller "nginxs" created
 ```
 
-Container의 이름은 nginx, Label은 production, Docker images는 ruo91 사용자의 nginx 이미지, 실행 갯수는 20개, Master 서버의 API Server 정보를 입력 하여 실행 해봅니다.
+create 명령어가 실행 되고 나면, 해당 Minion 서버중에 Workload가 낮은 서버에서 해당 docker 이미지를 받아오고(pending),
+시간이 지나면 다음과 같이 Running 상태로 바뀌게 됩니다. 이는 곧 사용할 준비가 되었다는 뜻입니다.
+(시스템 및 네트워크 상황에 따라 몇분 이상 소요 될 수 있습니다.)
 ```sh
-root@kubernetes-client:~# kubectl run-container nginx -l name=production --image=ruo91/nginx --replicas=20 -s 172.17.1.4:8080
-```
-```sh
-CONTROLLER   CONTAINER(S)   IMAGE(S)      SELECTOR          REPLICAS
-nginx        nginx          ruo91/nginx   name=production   20
+root@ruo91:~# docker exec kubernetes-client kubectl get pods -s 172.17.1.4:8080
+NAME           READY     STATUS    RESTARTS   AGE
+nginxs-1dzwr   1/1       Running   0          1m
+nginxs-2kq2o   1/1       Running   0          1m
+nginxs-6ph77   1/1       Running   0          1m
+nginxs-6wxx8   1/1       Running   0          1m
+nginxs-98rsw   1/1       Running   0          1m
+nginxs-n5gks   1/1       Running   0          1m
+nginxs-odo7u   1/1       Running   0          1m
+nginxs-p7oc2   1/1       Running   0          1m
+nginxs-ubpyl   1/1       Running   0          1m
+nginxs-utanv   1/1       Running   0          1m
 ```
 
-이제 Pods의 정보를 확인 해보면 아직까지는 Pending으로 되어 있습니다.
-이는 Minion 서버에서 해당 이미지를 다운로드 하므로 시간이 걸립니다.
-```
-root@kubernetes-client:~# kubectl get pods -s 172.17.1.4:8080
-NAME          READY     STATUS    RESTARTS   AGE
-nginx-348aw   0/1       Pending   0          3s
-nginx-46xcp   0/1       Pending   0          3s
-nginx-7cyr7   0/1       Pending   0          3s
-nginx-8ph4l   0/1       Pending   0          3s
-nginx-akkqf   0/1       Pending   0          3s
-nginx-cczok   0/1       Pending   0          3s
-nginx-cstab   0/1       Pending   0          3s
-nginx-f7iam   0/1       Pending   0          3s
-nginx-g3k4h   0/1       Pending   0          3s
-nginx-ixjrq   0/1       Pending   0          3s
-nginx-j98nf   0/1       Pending   0          3s
-nginx-kii3b   0/1       Pending   0          3s
-nginx-o51a6   0/1       Pending   0          3s
-nginx-ouvh9   0/1       Pending   0          3s
-nginx-ryjc4   0/1       Pending   0          3s
-nginx-sok0g   0/1       Pending   0          3s
-nginx-tkik5   0/1       Pending   0          3s
-nginx-vt4z8   0/1       Pending   0          3s
-nginx-w35xf   0/1       Pending   0          3s
-nginx-x8iyb   0/1       Pending   0          3s
-```
-시간이 지나면 다음과 같이 Running으로 바뀌게 됩니다.
-```
-root@kubernetes-client:~# kubectl get pods -s 172.17.1.4:8080
-```
-```
-NAME          READY     STATUS    RESTARTS   AGE
-nginx-348aw   1/1       Running   0          6m
-nginx-46xcp   1/1       Running   0          6m
-nginx-7cyr7   1/1       Running   0          6m
-nginx-8ph4l   1/1       Running   0          6m
-nginx-akkqf   1/1       Running   0          6m
-nginx-cczok   1/1       Running   0          6m
-nginx-cstab   1/1       Running   0          6m
-nginx-f7iam   1/1       Running   0          6m
-nginx-g3k4h   1/1       Running   0          6m
-nginx-ixjrq   1/1       Running   0          6m
-nginx-j98nf   1/1       Running   0          6m
-nginx-kii3b   1/1       Running   0          6m
-nginx-o51a6   1/1       Running   0          6m
-nginx-ouvh9   1/1       Running   0          6m
-nginx-ryjc4   1/1       Running   0          6m
-nginx-sok0g   1/1       Running   0          6m
-nginx-tkik5   1/1       Running   0          6m
-nginx-vt4z8   1/1       Running   0          6m
-nginx-w35xf   1/1       Running   0          6m
-nginx-x8iyb   1/1       Running   0          6m
+describe 옵션으로 상태를 확인 해봅니다.
+```sh
+root@ruo91:~# docker exec kubernetes-client kubectl describe -f nginx.yaml -s 172.17.1.4:8080
+Name:           nginxs
+Namespace:      default
+Image(s):       ruo91/nginx:latest
+Selector:       app=nginx
+Labels:         app=nginx
+Replicas:       10 current / 10 desired
+Pods Status:    10 Running / 0 Waiting / 0 Succeeded / 0 Failed
+No volumes.
+Events:
+  FirstSeen     LastSeen        Count   From                            SubobjectPath   Reason                  Message
+  ─────────     ────────        ─────   ────                            ─────────────   ──────                  ───────
+  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-n5gks
+  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-6wxx8
+  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-98rsw
+  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-6ph77
+  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-ubpyl
+  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-odo7u
+  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-1dzwr
+  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-utanv
+  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-2kq2o
+  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-p7oc2
 ```
 
 # - Kubernetes Web UI
 ----------------------
-Kubernetes의 API 서버는 기본적으로 8080 포트를 통해 Web UI를 지원하므로, HostOS에 Nginx 같은 웹서버를 사용한다면,
-Reverse Proxy 설정을 통하여 넘겨주면 쉽게 접속이 가능합니다.
+Kubernetes v1.x 버전 부터는 Web UI(kube-ui)가 Minion 쪽에서 Pod로 실행 되도록 변경 되었습니다.
+HostOS에 Nginx 같은 웹서버를 사용한다면, Reverse Proxy 설정을 통하여 넘겨주면 쉽게 접속이 가능합니다.
 ```
 # Kubernetes web ui
 server {
@@ -386,30 +125,30 @@ server {
 }
 ```
 
-Kubernetes Client & Master
-----------------------
-![Kubernetes Client and Master][1]
+Kubernetes Web UI #0
+---------------------
+![Kubernetes Web UI #0][1]
 
-Kubernetes Client
-----------------------
-![Kubernetes Client][2]
+Kubernetes Web UI #1
+---------------------
+![Kubernetes Web UI #1][2]
 
-Kubernetes Web UI
------------------------------
-![Kubernetes Web UI][3]
+Kubernetes Web UI #2
+---------------------
+![Kubernetes Web UI #2][3]
 
-Kubernetes Web UI - Pods
-----------------
-![Kubernetes Web UI][4]
+Kubernetes Web UI #3
+---------------------
+![Kubernetes Web UI #3][4]
 
-Kubernetes Web UI - API
-----------------
-![Kubernetes Web UI][5]
+Kubernetes Web UI #4
+---------------------
+![Kubernetes Web UI #4][5]
 
 Thanks. :-)
 [0]: http://cdn.yongbok.net/ruo91/img/kubernetes/The_architecture_diagram_of_docker_kubernetes.png
-[1]: http://cdn.yongbok.net/ruo91/img/kubernetes/docker-kubernetes-0.png
-[2]: http://cdn.yongbok.net/ruo91/img/kubernetes/docker-kubernetes-1.png
-[3]: http://cdn.yongbok.net/ruo91/img/kubernetes/docker-kubernetes-web-ui-0.png
-[4]: http://cdn.yongbok.net/ruo91/img/kubernetes/docker-kubernetes-web-ui-1.png
-[5]: http://cdn.yongbok.net/ruo91/img/kubernetes/docker-kubernetes-web-ui-2.png
+[1]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_0.png
+[2]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_1.png
+[3]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_2.png
+[4]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_3.png
+[5]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_4.png
