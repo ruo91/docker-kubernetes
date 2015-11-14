@@ -12,7 +12,7 @@ DOCKER_PID="$(ps -e | grep 'docker' | awk '{ printf $1 "\n" }')"
 
 # kill docker
 echo "Kill Docker..." && sleep 1
-kill $DOCKER_PID
+kill -9 $DOCKER_PID
 echo "done" && sleep 2
 
 # Flannel
