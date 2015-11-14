@@ -5,8 +5,8 @@
 # docker build --rm -t kubernetes:minion -f 03_kubernetes-minion .
 #
 # - Run
-# docker run -d --name="kubernetes-minion-0" -h "kubernetes-minion-0" --privileged=true -v /dev:/dev -v /proc:/proc -v /sys:/sys kubernetes:minion
-# docker run -d --name="kubernetes-minion-1" -h "kubernetes-minion-1" --privileged=true -v /dev:/dev -v /proc:/proc -v /sys:/sys kubernetes:minion
+# docker run -d --name="kubernetes-minion-0" -h "kubernetes-minion-0" --privileged=true -v /dev:/dev -v /sys:/sys -v /lib/modules:/lib/modules kubernetes:minion
+# docker run -d --name="kubernetes-minion-1" -h "kubernetes-minion-1" --privileged=true -v /dev:/dev -v /sys:/sys -v /lib/modules:/lib/modules kubernetes:minion
 #
 # - SSH
 # ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-0`
