@@ -20,10 +20,9 @@ MAINTAINER Yongbok Kim <ruo91@yongbok.net>
 #RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
 
 # The last update and install package for docker
-RUN apt-get update && apt-get install -y iptables apparmor supervisor openssh-server nano curl git-core build-essential net-tools iputils-ping bridge-utils
+RUN apt-get update && apt-get install -y docker.io lxc iptables apparmor supervisor openssh-server nano curl git-core build-essential net-tools iputils-ping bridge-utils
 
 # Docker in Docker
-RUN curl -sSL https://get.docker.com/ | sh
 ADD conf/docker/default_docker /etc/default/docker
 ADD https://raw.githubusercontent.com/jpetazzo/dind/master/wrapdocker /bin/wrapdocker
 RUN chmod +x /bin/wrapdocker
