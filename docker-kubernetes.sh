@@ -97,7 +97,7 @@ function f_run {
       ## Kubernetes Master ##
       echo "- Kubernetes Master"
       echo "├-- Run $CONTAINER_MASTER"
-      $DOCKER run -d --name="$CONTAINER_MASTER" -h "$CONTAINER_MASTER" --privileged=true -v /dev:/dev $IMAGE_MASTER > /dev/null 2>&1
+      $DOCKER run -d --name="$CONTAINER_MASTER" -h "$CONTAINER_MASTER" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules $IMAGE_MASTER > /dev/null 2>&1
 
       # Static IP
       echo "├-- Static IP Setting"
@@ -128,7 +128,7 @@ function f_run {
       echo "- Kubernetes Minion"
       for (( i=0; i<2; i++ )); do
           echo "├-- Run $CONTAINER_MINION-$i"
-          $DOCKER run -d --name="$CONTAINER_MINION-$i" -h "$CONTAINER_MINION-$i" --privileged=true -v /dev:/dev -v /sys:/sys $IMAGE_MINION > /dev/null 2>&1
+          $DOCKER run -d --name="$CONTAINER_MINION-$i" -h "$CONTAINER_MINION-$i" --privileged=true -v /dev:/dev -v /sys:/sys -v /lib/modules:/lib/modules $IMAGE_MINION > /dev/null 2>&1
       done
       sleep 3
 
