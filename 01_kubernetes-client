@@ -27,7 +27,7 @@ WORKDIR $SRC_DIR
 # Google - Kubernetes
 ENV KUBERNETES_HOME $SRC_DIR/kubernetes
 ENV PATH $PATH:$KUBERNETES_HOME/client/bin
-ADD kubernetes-client-linux-amd64.tar.gz $SRC_DIR
+ADD https://media.githubusercontent.com/media/ruo91/docker-kubernetes/release-tar/1.1/kubernetes-client-linux-amd64.tar.gz $SRC_DIR
 ADD conf/cluster/06_nginx.yaml /opt/nginx.yaml
 ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-rc.yaml /opt/kube-ui-rc.yaml
 ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-svc.yaml /opt/kube-ui-svc.yaml
