@@ -7,6 +7,7 @@
 DOCKER="$(which docker)"
 
 # Image name
+DOCKER_HUB_USER_ID="ruo91"
 IMAGE_ETCD="kubernetes:etcd"
 IMAGE_MASTER="kubernetes:master"
 IMAGE_MINION="kubernetes:minion"
@@ -48,6 +49,23 @@ function f_build {
 
   # Remove none images
   #f_none_rmi > /dev/null 2>&1
+}
+
+function f_pull_images {
+  echo "- Pull images"
+  echo "├-- Kubernetes ETCD"
+  $DOCKER pull $DOCKER_HUB_USER_ID/$IMAGE_ETCD
+  echo
+  echo "├-- Kubernetes Master"
+  $DOCKER pull $DOCKER_HUB_USER_ID/$IMAGE_MASTER
+  echo
+  echo "├-- Kubernetes Minion"
+  $DOCKER pull $DOCKER_HUB_USER_ID/$IMAGE_MINION
+  echo
+  echo "└-- Kubernetes Client"
+  $DOCKER pull $DOCKER_HUB_USER_ID/$IMAGE_CLIENT
+  echo "done"
+  echo
 }
 
 function f_run {
@@ -218,6 +236,7 @@ function f_help {
   echo
   echo "- Options"
   echo "b, build	: Build containers"
+  echo "p, pull		: Pull images"
   echo "r, run		: Run containers"
   echo "sr		: Stop & Remove all containers"
   echo "none		: Remove <none> images"
@@ -243,6 +262,15 @@ case ${ARG_1} in
     else
         f_help
     fi
+  ;;
+
+  p|pull)
+    if [[ "$ARG_2" == "y" || "$ARG_2" == "yes"  ]]; then
+        f_pull_images
+
+   else
+       f_help
+   fi
   ;;
 
   r|run)
