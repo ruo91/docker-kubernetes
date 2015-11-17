@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y supervisor openssh-server nano curl git
 
 # Variable
 ENV SRC_DIR /opt
-WORKDIR $SRC_DIR
+#WORKDIR $SRC_DIR
 
 # GO Language
 ENV GO_ARCH linux-amd64
@@ -31,7 +31,7 @@ ENV PATH $PATH:$GOROOT/bin
 RUN curl -XGET https://github.com/golang/go/tags | grep tag-name > /tmp/golang_tag \
  && sed -e 's/<[^>]*>//g' /tmp/golang_tag > /tmp/golang_ver \
  && GO_VER=`sed -e 's/      go/go/g' /tmp/golang_ver | head -n 1` && rm -f /tmp/golang_* \
- && curl -LO "https://storage.googleapis.com/golang/$GO_VER.$GO_ARCH.tar.gz" \
+ && cd $SRC_DIR && curl -LO "https://storage.googleapis.com/golang/$GO_VER.$GO_ARCH.tar.gz" \
  && tar -C $SRC_DIR -xzf go*.tar.gz && rm -rf go*.tar.gz \
  && echo '' >> /etc/profile \
  && echo '# Golang' >> /etc/profile \
@@ -42,10 +42,10 @@ RUN curl -XGET https://github.com/golang/go/tags | grep tag-name > /tmp/golang_t
 # Flannel
 ENV FLANNEL_HOME $SRC_DIR/flannel
 ENV PATH $PATH:$FLANNEL_HOME/bin
-RUN git clone https://github.com/coreos/flannel.git \
- && cd flannel && ./build \
+RUN git clone https://github.com/coreos/flannel.git $SRC_DIR \
+ && cd $SRC_DIR/flannel && ./build \
  && echo '# flannel'>>/etc/profile \
- && echo "export FLANNEL_HOME=/opt/flannel">>/etc/profile \
+ && echo "export FLANNEL_HOME=$FLANNEL_HOME">>/etc/profile \
  && echo 'export PATH=$PATH:$FLANNEL_HOME/bin'>>/etc/profile \
  && echo ''>>/etc/profile
 
