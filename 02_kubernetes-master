@@ -53,7 +53,8 @@ RUN git clone https://github.com/coreos/flannel.git \
 ENV KUBERNETES_HOME $SRC_DIR/kubernetes
 ENV PATH $PATH:$KUBERNETES_HOME/server/bin
 ADD https://media.githubusercontent.com/media/ruo91/docker-kubernetes/release-tar/1.1/kubernetes-server-linux-amd64.tar.gz $SRC_DIR
-RUN echo '# Kubernetes' >> /etc/profile \
+RUN tar xzvf kubernetes-server-linux-amd64.tar.gz \
+ && echo '# Kubernetes' >> /etc/profile \
  && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> /etc/profile \
  && echo 'export PATH=$PATH:$KUBERNETES_HOME/server/bin' >> /etc/profile \
  && echo '' >> /etc/profile
