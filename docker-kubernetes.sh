@@ -89,7 +89,12 @@ function f_run {
       echo "- ETCD Cluster"
       for (( i=0; i<3; i++ )); do
           echo "├-- Run $CONTAINER_ETCD-$i"
-          $DOCKER run -d --name="$CONTAINER_ETCD-$i" -h "$CONTAINER_ETCD-$i" $IMAGE_ETCD > /dev/null 2>&1
+	  if [ "$(docker images | grep -v 'REPOSITORY' | grep 'ruo91/kubernetes' | head -n 4 | awk '{ print $2}' | grep 'etcd')" == "etcd"  ]; then
+              $DOCKER run -d --name="$CONTAINER_ETCD-$i" -h "$CONTAINER_ETCD-$i" $DOCKER_HUB_USER_ID/$IMAGE_ETCD > /dev/null 2>&1
+
+	  else
+	      $DOCKER run -d --name="$CONTAINER_ETCD-$i" -h "$CONTAINER_ETCD-$i" $IMAGE_ETCD > /dev/null 2>&1
+          fi
       done
 
       # Static IP
@@ -115,7 +120,12 @@ function f_run {
       ## Kubernetes Master ##
       echo "- Kubernetes Master"
       echo "├-- Run $CONTAINER_MASTER"
-      $DOCKER run -d --name="$CONTAINER_MASTER" -h "$CONTAINER_MASTER" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules $IMAGE_MASTER > /dev/null 2>&1
+      if [ "$(docker images | grep -v 'REPOSITORY' | grep 'ruo91/kubernetes' | head -n 4 | awk '{ print $2}' | grep 'master')" == "master"  ]; then
+          $DOCKER run -d --name="$CONTAINER_MASTER" -h "$CONTAINER_MASTER" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules $DOCKER_HUB_USER_ID/$IMAGE_MASTER > /dev/null 2>&1
+
+      else
+          $DOCKER run -d --name="$CONTAINER_MASTER" -h "$CONTAINER_MASTER" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules $IMAGE_MASTER > /dev/null 2>&1
+      fi
 
       # Static IP
       echo "├-- Static IP Setting"
@@ -146,7 +156,12 @@ function f_run {
       echo "- Kubernetes Minion"
       for (( i=0; i<2; i++ )); do
           echo "├-- Run $CONTAINER_MINION-$i"
-          $DOCKER run -d --name="$CONTAINER_MINION-$i" -h "$CONTAINER_MINION-$i" --privileged=true -v /dev:/dev -v /sys:/sys -v /lib/modules:/lib/modules $IMAGE_MINION > /dev/null 2>&1
+          if [ "$(docker images | grep -v 'REPOSITORY' | grep 'ruo91/kubernetes' | head -n 4 | awk '{ print $2}' | grep 'minion')" == "minion"  ]; then
+	      $DOCKER run -d --name="$CONTAINER_MINION-$i" -h "$CONTAINER_MINION-$i" --privileged=true -v /dev:/dev -v /sys:/sys -v /lib/modules:/lib/modules $DOCKER_HUB_USER_ID/$IMAGE_MINION > /dev/null 2>&1
+
+	  else
+	      $DOCKER run -d --name="$CONTAINER_MINION-$i" -h "$CONTAINER_MINION-$i" --privileged=true -v /dev:/dev -v /sys:/sys -v /lib/modules:/lib/modules $IMAGE_MINION > /dev/null 2>&1
+	  fi
       done
       sleep 3
 
@@ -174,7 +189,12 @@ function f_run {
       # Kubernetes Client
       echo "- Kubernetes Client"
       echo "├-- Run $CONTAINER_CLIENT"
-      $DOCKER run -d --name="$CONTAINER_CLIENT" -h "$CONTAINER_CLIENT" $IMAGE_CLIENT > /dev/null 2>&1
+      if [ "$(docker images | grep -v 'REPOSITORY' | grep 'ruo91/kubernetes' | head -n 4 | awk '{ print $2}' | grep 'client')" == "client"  ]; then
+          $DOCKER run -d --name="$CONTAINER_CLIENT" -h "$CONTAINER_CLIENT" $DOCKER_HUB_USER_ID/$IMAGE_CLIENT > /dev/null 2>&1
+
+      else
+          $DOCKER run -d --name="$CONTAINER_CLIENT" -h "$CONTAINER_CLIENT" $IMAGE_CLIENT > /dev/null 2>&1
+      fi
 
       # Static IP
       echo "└-- Static IP Setting"
