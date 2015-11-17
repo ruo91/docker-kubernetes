@@ -20,7 +20,12 @@ MAINTAINER Yongbok Kim <ruo91@yongbok.net>
 #RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
 
 # The last update and install package for docker
-RUN apt-get update && apt-get install -y docker.io lxc iptables apparmor supervisor openssh-server nano curl git-core build-essential net-tools iputils-ping bridge-utils
+DOCKER_REPO_KEY 58118E89F3A912897C070ADBF76221572C52609D
+DOCKER_REPO_KEY_SERVER hkp://p80.pool.sks-keyservers.net:80
+RUN apt-get update && apt-get install -y add-apt-key apt-transport-https ca-certificates
+RUN apt-key adv --keyserver $DOCKER_REPO_KEY_SERVER --recv-keys $DOCKER_REPO_KEY
+RUN apt-get clean all && apt-get update && apt-get install -y docker-engine iptables apparmor \
+ supervisor openssh-server nano curl git-core build-essential net-tools iputils-ping bridge-utils
 
 # Docker in Docker
 ADD conf/docker/default_docker /etc/default/docker
