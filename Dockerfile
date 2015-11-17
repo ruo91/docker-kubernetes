@@ -35,7 +35,7 @@ VOLUME /var/lib/docker
 
 # Variable
 ENV SRC_DIR /opt
-#WORKDIR $SRC_DIR
+WORKDIR $SRC_DIR
 
 # GO Language
 ENV GO_ARCH linux-amd64
@@ -55,8 +55,8 @@ RUN curl -XGET https://github.com/golang/go/tags | grep tag-name > /tmp/golang_t
 # Flannel
 ENV FLANNEL_HOME $SRC_DIR/flannel
 ENV PATH $PATH:$FLANNEL_HOME/bin
-RUN git clone https://github.com/coreos/flannel.git $SRC_DIR \
- && cd $SRC_DIR/flannel && ./build \
+RUN git clone https://github.com/coreos/flannel.git \
+ && cd flannel && ./build \
  && echo '# flannel'>>/etc/profile \
  && echo "export FLANNEL_HOME=$FLANNEL_HOME">>/etc/profile \
  && echo 'export PATH=$PATH:$FLANNEL_HOME/bin'>>/etc/profile \
