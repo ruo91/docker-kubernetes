@@ -22,15 +22,15 @@ RUN apt-get update && apt-get install -y supervisor openssh-server nano net-tool
 
 # Variable
 ENV SRC_DIR /opt
-WORKDIR $SRC_DIR
+#WORKDIR $SRC_DIR
 
 # Google - Kubernetes
 ENV KUBERNETES_HOME $SRC_DIR/kubernetes
 ENV PATH $PATH:$KUBERNETES_HOME/client/bin
 ADD https://media.githubusercontent.com/media/ruo91/docker-kubernetes/release-tar/1.1/kubernetes-client-linux-amd64.tar.gz $SRC_DIR
 ADD conf/cluster/06_nginx.yaml /opt/nginx.yaml
-ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-rc.yaml /opt/kube-ui-rc.yaml
-ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-svc.yaml /opt/kube-ui-svc.yaml
+ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-rc.yaml $SRC_DIR/kube-ui-rc.yaml
+ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-svc.yaml $SRC_DIR/kube-ui-svc.yaml
 RUN echo '# Kubernetes' >> /etc/profile \
  && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> /etc/profile \
  && echo 'export PATH=$PATH:$KUBERNETES_HOME/client/bin' >> /etc/profile \
