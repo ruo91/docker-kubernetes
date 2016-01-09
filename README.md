@@ -146,7 +146,7 @@ Kubernetes Web UI #4
 ![Kubernetes Web UI #4][5]
 
 Thanks. :-)
-[0]: http://cdn.yongbok.net/ruo91/architecture/k8s/kubernetes_v1.x_architecture_with_flannel.png
+[0]: http://cdn.yongbok.net/ruo91/architecture/k8s/k8s_v1.x_architecture_with_flannel.png
 [1]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_0.png
 [2]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_1.png
 [3]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_2.png
