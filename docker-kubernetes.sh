@@ -121,10 +121,10 @@ function f_run {
       echo "- Kubernetes Master"
       echo "├-- Run $CONTAINER_MASTER"
       if [ "$(docker images | grep -v 'REPOSITORY' | grep 'ruo91/kubernetes' | head -n 4 | awk '{ print $2}' | grep 'master')" == "master"  ]; then
-          $DOCKER run -d --name="$CONTAINER_MASTER" -h "$CONTAINER_MASTER" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules $DOCKER_HUB_USER_ID/$IMAGE_MASTER > /dev/null 2>&1
+          $DOCKER run -d --name="$CONTAINER_MASTER" -h "$CONTAINER_MASTER" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules -p 8080:8080 $DOCKER_HUB_USER_ID/$IMAGE_MASTER > /dev/null 2>&1
 
       else
-          $DOCKER run -d --name="$CONTAINER_MASTER" -h "$CONTAINER_MASTER" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules $IMAGE_MASTER > /dev/null 2>&1
+          $DOCKER run -d --name="$CONTAINER_MASTER" -h "$CONTAINER_MASTER" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules -p 8080:8080 $IMAGE_MASTER > /dev/null 2>&1
       fi
 
       # Static IP
@@ -202,7 +202,11 @@ function f_run {
       echo "done"
       echo
 
-      # Web UI
+      # Issue : "kube-system" not found
+      KUBE_SYSTEM="kubectl create -f /opt/kube-system.json -s 172.17.1.4:8080"
+      $DOCKER exec $CONTAINER_CLIENT $KUBE_SYSTEM > /dev/null 2>&1
+
+      # Kube UI
       KUBE_UI_RC="kubectl create -f /opt/kube-ui-rc.yaml --namespace=kube-system -s 172.17.1.4:8080"
       KUBE_UI_SVC="kubectl create -f /opt/kube-ui-svc.yaml --namespace=kube-system -s 172.17.1.4:8080"
 
