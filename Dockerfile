@@ -29,6 +29,7 @@ ENV KUBERNETES_HOME $SRC_DIR/kubernetes
 ENV PATH $PATH:$KUBERNETES_HOME/client/bin
 ADD https://media.githubusercontent.com/media/ruo91/docker-kubernetes/release-tar/1.1/kubernetes-client-linux-amd64.tar.gz $SRC_DIR
 ADD conf/cluster/06_nginx.yaml /opt/nginx.yaml
+ADD conf/cluster/07_kube-system.json /opt/kube-system.json
 ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-rc.yaml $SRC_DIR/kube-ui-rc.yaml
 ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-svc.yaml $SRC_DIR/kube-ui-svc.yaml
 RUN tar xzvf kubernetes-client-linux-amd64.tar.gz \
