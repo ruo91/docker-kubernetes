@@ -20,6 +20,8 @@ K8S_HOST_OVERRIDE="$(ip a s | grep 'eth1' | grep 'inet' | cut -d '/' -f 1 | awk 
 
 # Options
 PROXY_MODE="iptables"
+KUBE_DNS_DOMAIN="kube-dns.local"
+KUBE_DNS_CLUSTER_IP="10.250.250.250"
 
 # Logs
 K8S_PROXY_LOGS="/tmp/proxy.log"
@@ -31,9 +33,14 @@ K8S_KUBELET_SERVER_PID="$(ps -e | grep 'kubelet' | awk '{ printf $1 "\n" }')"
 
 # Functions
 function f_proxy {
+# - Issue
+# write /sys/module/nf_conntrack/parameters/hashsize: operation not supported
+# https://github.com/kubernetes/kubernetes/issues/24295#issuecomment-216486725
+# --conntrack-max=0
   echo "Start Proxy..."  && sleep 1
   kube-proxy \
   --proxy-mode="$PROXY_MODE" \
+  --conntrack-max=0 \
   --master=$K8S_API_SERVER:$K8S_API_SERVER_PORT \
   --v=0 > $K8S_PROXY_LOGS 2>&1 &
   echo "done"
@@ -42,6 +49,9 @@ function f_proxy {
 function f_kubelet {
   echo "Start Kubelet..." && sleep 1
   kubelet \
+  --allow-privileged=true \
+#  --cluster-dns="$KUBE_DNS_CLUSTER_IP" \
+#  --cluster-domain="$KUBE_DNS_DOMAIN" \
   --address=$K8S_COMMON_SERVER_ADDR \
   --port=$K8S_KUBELET_PORT \
   --cadvisor-port=$K8S_CADVISOR_PORT \
@@ -62,6 +72,7 @@ function f_proxy_manual {
   echo "Start Proxy..."  && sleep 1
   kube-proxy \
   --proxy-mode="$PROXY_MODE" \
+  --conntrack-max=0 \
   --master=$K8S_API_SERVER \
   --v=0 > $K8S_PROXY_LOGS 2>&1 &
   echo "done"
@@ -94,6 +105,9 @@ function f_kubelet_manual {
 
   echo "Start Kubelet..." && sleep 1
   kubelet \
+  --allow-privileged=true \
+#  --cluster-dns="$KUBE_DNS_CLUSTER_IP" \
+#  --cluster-domain="$KUBE_DNS_DOMAIN" \
   --port=$K8S_KUBELET_PORT \
   --cadvisor-port=$K8S_CADVISOR_PORT \
   --address=$K8S_KUBELET_SERVICE_ADDR \
