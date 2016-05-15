@@ -11,29 +11,27 @@
 # ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-client`
 
 # Use the base images
-FROM ubuntu:15.04
+FROM ubuntu:16.04
 MAINTAINER Yongbok Kim <ruo91@yongbok.net>
 
 # Change the repository
-#RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
+RUN sed -i 's/archive.ubuntu.com/ftp.daumkakao.com/g' /etc/apt/sources.list
 
 # The last update and install package for docker
 RUN apt-get update && apt-get install -y supervisor openssh-server nano net-tools iputils-ping
 
 # Variable
 ENV SRC_DIR /opt
-#WORKDIR $SRC_DIR
+WORKDIR $SRC_DIR
 
 # Google - Kubernetes
 ENV KUBERNETES_HOME $SRC_DIR/kubernetes
 ENV PATH $PATH:$KUBERNETES_HOME/client/bin
-ADD https://media.githubusercontent.com/media/ruo91/docker-kubernetes/release-tar/1.1/kubernetes-client-linux-amd64.tar.gz $SRC_DIR
-ADD conf/cluster/06_nginx.yaml /opt/nginx.yaml
-ADD conf/cluster/07_kube-system.json /opt/kube-system.json
-ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-rc.yaml $SRC_DIR/kube-ui-rc.yaml
-ADD https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/kube-ui/kube-ui-svc.yaml $SRC_DIR/kube-ui-svc.yaml
-RUN tar xzvf kubernetes-client-linux-amd64.tar.gz \
- && echo '# Kubernetes' >> /etc/profile \
+ADD kubernetes-client-linux-amd64.tar.gz $SRC_DIR
+ADD conf/yaml/nginx.yaml $SRC_DIR/nginx.yaml
+ADD conf/yaml/skydns.yaml $SRC_DIR/skydns.yaml
+ADD conf/yaml/dashboard.yaml $SRC_DIR/dashboard.yaml
+RUN echo '# Kubernetes' >> /etc/profile \
  && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> /etc/profile \
  && echo 'export PATH=$PATH:$KUBERNETES_HOME/client/bin' >> /etc/profile \
  && echo '' >> /etc/profile
@@ -44,9 +42,9 @@ ADD conf/supervisord/00_default.conf /etc/supervisor/conf.d/supervisord.conf
 
 # SSH
 RUN mkdir /var/run/sshd
-RUN sed -i 's/without-password/yes/g' /etc/ssh/sshd_config
-RUN sed -i 's/UsePAM yes/UsePAM no/g' /etc/ssh/sshd_config
+RUN sed -i '/^#UseLogin/ s:.*:UseLogin yes:' /etc/ssh/sshd_config
 RUN sed -i 's/\#AuthorizedKeysFile/AuthorizedKeysFile/g' /etc/ssh/sshd_config
+RUN sed -i '/^PermitRootLogin/ s:.*:PermitRootLogin yes:' /etc/ssh/sshd_config
 
 # Set the root password for ssh
 RUN echo 'root:kubernetes' |chpasswd
