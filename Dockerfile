@@ -5,22 +5,29 @@
 # docker build --rm -t kubernetes:minion -f 03_kubernetes-minion .
 #
 # - Run
-# docker run -d --name="kubernetes-minion-0" -h "kubernetes-minion-0" --privileged=true -v /dev:/dev -v /sys:/sys -v /lib/modules:/lib/modules kubernetes:minion
-# docker run -d --name="kubernetes-minion-1" -h "kubernetes-minion-1" --privileged=true -v /dev:/dev -v /sys:/sys -v /lib/modules:/lib/modules kubernetes:minion
+# docker run -d --name="kubernetes-minion-0" -h "kubernetes-minion-0" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules kubernetes:minion
+# docker run -d --name="kubernetes-minion-1" -h "kubernetes-minion-1" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules kubernetes:minion
 #
 # - SSH
 # ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-0`
 # ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-minion-1`
 #
 # Use the base images
-FROM ubuntu:15.04
+FROM ubuntu:16.04
 MAINTAINER Yongbok Kim <ruo91@yongbok.net>
 
 # Change the repository
-#RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
+RUN sed -i 's/archive.ubuntu.com/ftp.daumkakao.com/g' /etc/apt/sources.list
 
 # The last update and install package for docker
-RUN apt-get update && apt-get install -y docker.io lxc iptables apparmor supervisor openssh-server nano curl git-core build-essential net-tools iputils-ping bridge-utils
+ENV BASE_IMG_CODENAME ubuntu-xenial
+ENV DOCKER_REPO_KEY 58118E89F3A912897C070ADBF76221572C52609D
+ENV DOCKER_REPO_KEY_SERVER hkp://p80.pool.sks-keyservers.net:80
+RUN apt-get update && apt-get install -y add-apt-key apt-transport-https ca-certificates
+RUN apt-key adv --keyserver $DOCKER_REPO_KEY_SERVER --recv-keys $DOCKER_REPO_KEY
+RUN echo "deb https://apt.dockerproject.org/repo $BASE_IMG_CODENAME main" > /etc/apt/sources.list.d/docker.list 
+RUN apt-get clean all && apt-get update && apt-get install -y docker-engine iptables apparmor \
+ supervisor openssh-server nano curl git-core build-essential net-tools iputils-ping bridge-utils
 
 # Docker in Docker
 ADD conf/docker/default_docker /etc/default/docker
@@ -44,7 +51,7 @@ ENV PATH $PATH:$GOROOT/bin
 RUN curl -XGET https://github.com/golang/go/tags | grep tag-name > /tmp/golang_tag \
  && sed -e 's/<[^>]*>//g' /tmp/golang_tag > /tmp/golang_ver \
  && GO_VER=`sed -e 's/      go/go/g' /tmp/golang_ver | head -n 1` && rm -f /tmp/golang_* \
- && cd $SRC_DIR && curl -LO "https://storage.googleapis.com/golang/$GO_VER.$GO_ARCH.tar.gz" \
+ && curl -LO "https://storage.googleapis.com/golang/$GO_VER.$GO_ARCH.tar.gz" \
  && tar -C $SRC_DIR -xzf go*.tar.gz && rm -rf go*.tar.gz \
  && echo '' >> /etc/profile \
  && echo '# Golang' >> /etc/profile \
@@ -58,16 +65,15 @@ ENV PATH $PATH:$FLANNEL_HOME/bin
 RUN git clone https://github.com/coreos/flannel.git \
  && cd flannel && ./build \
  && echo '# flannel'>>/etc/profile \
- && echo "export FLANNEL_HOME=$FLANNEL_HOME">>/etc/profile \
+ && echo "export FLANNEL_HOME=/opt/flannel">>/etc/profile \
  && echo 'export PATH=$PATH:$FLANNEL_HOME/bin'>>/etc/profile \
  && echo ''>>/etc/profile
 
 # Google - Kubernetes
 ENV KUBERNETES_HOME $SRC_DIR/kubernetes
 ENV PATH $PATH:$KUBERNETES_HOME/server/bin
-ADD https://media.githubusercontent.com/media/ruo91/docker-kubernetes/release-tar/1.1/kubernetes-server-linux-amd64.tar.gz $SRC_DIR
-RUN tar xzvf kubernetes-server-linux-amd64.tar.gz \
- && echo '# Kubernetes' >> /etc/profile \
+ADD kubernetes-server-linux-amd64.tar.gz $SRC_DIR
+RUN echo '# Kubernetes' >> /etc/profile \
  && echo "export KUBERNETES_HOME=$KUBERNETES_HOME" >> /etc/profile \
  && echo 'export PATH=$PATH:$KUBERNETES_HOME/server/bin' >> /etc/profile \
  && echo '' >> /etc/profile
@@ -84,9 +90,9 @@ ADD conf/supervisord/01_minion.conf /etc/supervisor/conf.d/supervisord.conf
 
 # SSH
 RUN mkdir /var/run/sshd
-RUN sed -i 's/without-password/yes/g' /etc/ssh/sshd_config
-RUN sed -i 's/UsePAM yes/UsePAM no/g' /etc/ssh/sshd_config
+RUN sed -i '/^#UseLogin/ s:.*:UseLogin yes:' /etc/ssh/sshd_config
 RUN sed -i 's/\#AuthorizedKeysFile/AuthorizedKeysFile/g' /etc/ssh/sshd_config
+RUN sed -i '/^PermitRootLogin/ s:.*:PermitRootLogin yes:' /etc/ssh/sshd_config
 
 # Set the root password for ssh
 RUN echo 'root:kubernetes' |chpasswd
