@@ -15,7 +15,7 @@ K8S_API_SERVER_PORT="8080"
 
 # Address
 K8S_API_SERVER="172.17.1.4"
-K8S_SERVICE_CLUSTER_IP_RANGE="$(ip a s flannel.1 | grep -v 'inet6' | grep 'inet' | cut -d ':' -f 2 | awk '{ print $2}' | sed 's/0\/8/0\/16/g')"
+K8S_SERVICE_CLUSTER_IP_RANGE="$(ip a s flannel.1 | grep -v 'inet6' | grep 'inet' | cut -d ':' -f 2 | awk '{ print $2}' | sed 's/0\/16/0\/24/g')"
 K8S_COMMON_SERVER_ADDR="0.0.0.0"
 K8S_ETCD_SERVER="http://172.17.1.1:$K8S_ETCD_PORT,http://172.17.1.2:$K8S_ETCD_PORT,http://172.17.1.3:$K8S_ETCD_PORT"
 
