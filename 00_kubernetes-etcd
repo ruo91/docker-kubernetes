@@ -15,11 +15,11 @@
 # ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' etcd-cluster-2`
 
 # Use the base images
-FROM ubuntu:15.04
+FROM ubuntu:16.04
 MAINTAINER Yongbok Kim <ruo91@yongbok.net>
 
 # Change the repository
-RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
+RUN sed -i 's/archive.ubuntu.com/ftp.daumkakao.com/g' /etc/apt/sources.list
 
 # The last update and install package for docker
 RUN apt-get update && apt-get install -y supervisor openssh-server git-core curl nano build-essential
@@ -46,8 +46,11 @@ RUN curl -XGET https://github.com/golang/go/tags | grep tag-name > /tmp/golang_t
 # etcd
 ENV ETCD $SRC_DIR/etcd
 ENV PATH $PATH:$ETCD
+ENV ETCD_RELEASE_VER release-2.3
 RUN git clone https://github.com/coreos/etcd $SRC_DIR/etcd-source \
- && cd $SRC_DIR/etcd-source && ./build && mv bin $ETCD \
+ && cd $SRC_DIR/etcd-source \
+ && git checkout $ETCD_RELEASE_VER \
+ && ./build && mv bin $ETCD \
  && cd $SRC_DIR && rm -rf $SRC_DIR/etcd-source \
  && echo '# etcd' >> /etc/profile \
  && echo "export ETCD=$ETCD" >> /etc/profile \
@@ -64,9 +67,9 @@ ADD conf/supervisord/00_default.conf /etc/supervisor/conf.d/supervisord.conf
 
 # SSH
 RUN mkdir /var/run/sshd
-RUN sed -i 's/without-password/yes/g' /etc/ssh/sshd_config
-RUN sed -i 's/UsePAM yes/UsePAM no/g' /etc/ssh/sshd_config
+RUN sed -i '/^#UseLogin/ s:.*:UseLogin yes:' /etc/ssh/sshd_config
 RUN sed -i 's/\#AuthorizedKeysFile/AuthorizedKeysFile/g' /etc/ssh/sshd_config
+RUN sed -i '/^PermitRootLogin/ s:.*:PermitRootLogin yes:' /etc/ssh/sshd_config
 
 # Set the root password for ssh
 RUN echo 'root:kubernetes' |chpasswd

@@ -5,17 +5,17 @@
 # docker build --rm -t kubernetes:master -f 02_kubernetes-master .
 #
 # - Run
-# docker run -d --name="kubernetes-master" -h "kubernetes-master" --privileged=true -v /dev:/dev kubernetes:master
+# docker run -d --name="kubernetes-master" -h "kubernetes-master" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules -p 8080:8080 kubernetes:master
 #
 # - SSH
 # ssh `docker inspect -f '{{ .NetworkSettings.IPAddress }}' kubernetes-master`
 
 # Use the base images
-FROM ubuntu:15.04
+FROM ubuntu:16.04
 MAINTAINER Yongbok Kim <ruo91@yongbok.net>
 
 # Change the repository
-RUN sed -i 's/archive.ubuntu.com/kr.archive.ubuntu.com/g' /etc/apt/sources.list
+RUN sed -i 's/archive.ubuntu.com/ftp.daumkakao.com/g' /etc/apt/sources.list
 
 # The last update and install package for docker
 RUN apt-get update && apt-get install -y supervisor openssh-server nano curl git-core build-essential net-tools iputils-ping bridge-utils
@@ -70,9 +70,9 @@ ADD conf/supervisord/00_default.conf /etc/supervisor/conf.d/supervisord.conf
 
 # SSH
 RUN mkdir /var/run/sshd
-RUN sed -i 's/without-password/yes/g' /etc/ssh/sshd_config
-RUN sed -i 's/UsePAM yes/UsePAM no/g' /etc/ssh/sshd_config
+RUN sed -i '/^#UseLogin/ s:.*:UseLogin yes:' /etc/ssh/sshd_config
 RUN sed -i 's/\#AuthorizedKeysFile/AuthorizedKeysFile/g' /etc/ssh/sshd_config
+RUN sed -i '/^PermitRootLogin/ s:.*:PermitRootLogin yes:' /etc/ssh/sshd_config
 
 # Set the root password for ssh
 RUN echo 'root:kubernetes' |chpasswd

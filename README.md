@@ -25,7 +25,6 @@ Kubernetes는 Docker를 사용하여 빌드하기 때문에, HostOS에서 빌드
 ```sh
 root@ruo91:~# git clone https://github.com/kubernetes/kubernetes /opt/kubernetes-source
 root@ruo91:~# cd /opt/kubernetes-source
-root@ruo91:~# git checkout -b release-1.1 origin/release-1.1
 root@ruo91:~# make quick-release
 root@ruo91:~# cp _output/release-tars/kubernetes-client-linux-amd64.tar.gz /opt/docker-kubernetes
 root@ruo91:~# cp _output/release-tars/kubernetes-server-linux-amd64.tar.gz /opt/docker-kubernetes
@@ -51,13 +50,14 @@ docker exec 명령어를 통해 kubernetes-client 컨테이너에서 테스트 �
 ```sh
 root@ruo91:~# docker exec kubernetes-client kubectl get services -s 172.17.1.4:8080
 docker exec kubernetes-client kubectl get services -s 172.17.1.4:8080
-NAME         CLUSTER_IP   EXTERNAL_IP   PORT(S)   SELECTOR   AGE
-kubernetes   10.0.0.1     <none>        443/TCP   <none>     2m
+NAME         CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+kubernetes   10.250.94.1     <none>        443/TCP   24m
+
 ```
 Minion 서버에 10개의 Nginx를 실행 해보도록 하겠습니다. 
 ```sh
 root@ruo91:~#  docker exec kubernetes-client kubectl create -f /opt/nginx.yaml -s 172.17.1.4:8080
-replicationcontroller "nginxs" created
+replicationcontroller "nginx-svc" created
 ```
 
 create 명령어가 실행 되고 나면, 해당 Minion 서버중에 Workload가 낮은 서버에서 해당 docker 이미지를 받아오고(pending),
@@ -66,42 +66,64 @@ create 명령어가 실행 되고 나면, 해당 Minion 서버중에 Workload가
 ```sh
 root@ruo91:~# docker exec kubernetes-client kubectl get pods -s 172.17.1.4:8080
 NAME           READY     STATUS    RESTARTS   AGE
-nginxs-1dzwr   1/1       Running   0          1m
-nginxs-2kq2o   1/1       Running   0          1m
-nginxs-6ph77   1/1       Running   0          1m
-nginxs-6wxx8   1/1       Running   0          1m
-nginxs-98rsw   1/1       Running   0          1m
-nginxs-n5gks   1/1       Running   0          1m
-nginxs-odo7u   1/1       Running   0          1m
-nginxs-p7oc2   1/1       Running   0          1m
-nginxs-ubpyl   1/1       Running   0          1m
-nginxs-utanv   1/1       Running   0          1m
+nginxs-3a6jp   1/1       Running   0          6m
+nginxs-3x1bc   1/1       Running   0          6m
+nginxs-85aej   1/1       Running   0          6m
+nginxs-867li   1/1       Running   0          6m
+nginxs-8qa8e   1/1       Running   0          6m
+nginxs-bgt6c   1/1       Running   0          6m
+nginxs-bje1b   1/1       Running   0          6m
+nginxs-ecj4y   1/1       Running   0          6m
+nginxs-em4r7   1/1       Running   0          6m
+nginxs-eqt9v   1/1       Running   0          6m
+nginxs-fxmuf   1/1       Running   0          6m
+nginxs-mrdsm   1/1       Running   0          6m
+nginxs-oa0bt   1/1       Running   0          6m
+nginxs-onxg0   1/1       Running   0          6m
+nginxs-uxlhf   1/1       Running   0          6m
+nginxs-uy8yu   1/1       Running   0          6m
+nginxs-vrusv   1/1       Running   0          6m
+nginxs-vvjwc   1/1       Running   0          6m
+nginxs-xxd5f   1/1       Running   0          6m
+nginxs-y31ow   1/1       Running   0          6m
 ```
 
 describe 옵션으로 상태를 확인 해봅니다.
 ```sh
 root@ruo91:~# docker exec kubernetes-client kubectl describe -f nginx.yaml -s 172.17.1.4:8080
+Name:                   nginx-svc
+Namespace:              default
+Labels:                 app=nginx
+Selector:               <none>
+Type:                   NodePort
+IP:                     10.250.94.161
+Port:                   http    80/TCP
+NodePort:               http    30195/TCP
+Endpoints:              <none>
+Session Affinity:       None
+No events.
+
 Name:           nginxs
 Namespace:      default
 Image(s):       ruo91/nginx:latest
 Selector:       app=nginx
 Labels:         app=nginx
-Replicas:       10 current / 10 desired
-Pods Status:    10 Running / 0 Waiting / 0 Succeeded / 0 Failed
+Replicas:       20 current / 20 desired
+Pods Status:    20 Running / 0 Waiting / 0 Succeeded / 0 Failed
 No volumes.
 Events:
-  FirstSeen     LastSeen        Count   From                            SubobjectPath   Reason                  Message
-  ─────────     ────────        ─────   ────                            ─────────────   ──────                  ───────
-  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-n5gks
-  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-6wxx8
-  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-98rsw
-  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-6ph77
-  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-ubpyl
-  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-odo7u
-  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-1dzwr
-  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-utanv
-  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-2kq2o
-  44m           44m             1       {replication-controller }                       SuccessfulCreate        Created pod: nginxs-p7oc2
+  FirstSeen     LastSeen        Count   From                            SubobjectPath   Type            Reason                  Message
+  ---------     --------        -----   ----                            -------------   --------        ------                  -------
+  7m            7m              1       {replication-controller }                       Normal          SuccessfulCreate        Created pod: nginxs-fxmuf
+  7m            7m              1       {replication-controller }                       Normal          SuccessfulCreate        Created pod: nginxs-uy8yu
+  7m            7m              1       {replication-controller }                       Normal          SuccessfulCreate        Created pod: nginxs-8qa8e
+  7m            7m              1       {replication-controller }                       Normal          SuccessfulCreate        Created pod: nginxs-867li
+  7m            7m              1       {replication-controller }                       Normal          SuccessfulCreate        Created pod: nginxs-bje1b
+  7m            7m              1       {replication-controller }                       Normal          SuccessfulCreate        Created pod: nginxs-xxd5f
+  7m            7m              1       {replication-controller }                       Normal          SuccessfulCreate        Created pod: nginxs-onxg0
+  7m            7m              1       {replication-controller }                       Normal          SuccessfulCreate        Created pod: nginxs-vvjwc
+  7m            7m              1       {replication-controller }                       Normal          SuccessfulCreate        Created pod: nginxs-eqt9v
+  7m            7m              11      {replication-controller }                       Normal          SuccessfulCreate        (events with common reason combined)
 ```
 
 # - Kubernetes Web UI
@@ -145,10 +167,15 @@ Kubernetes Web UI #4
 ---------------------
 ![Kubernetes Web UI #4][5]
 
+Kubernetes Web UI #5
+---------------------
+![Kubernetes Web UI #4][6]
+
 Thanks. :-)
-[0]: http://cdn.yongbok.net/ruo91/architecture/k8s/k8s_v1.x_architecture_with_flannel.png
-[1]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_0.png
-[2]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_1.png
-[3]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_2.png
-[4]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_3.png
-[5]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.1/k8s_web_ui_4.png
+[0]: http://cdn.yongbok.net/ruo91/architecture/k8s/kubernetes_architecture_v1.x.png
+[1]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.2/k8s_web_ui_0.png
+[2]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.2/k8s_web_ui_1.png
+[3]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.2/k8s_web_ui_2.png
+[4]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.2/k8s_web_ui_3.png
+[5]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.2/k8s_web_ui_4.png
+[6]: http://cdn.yongbok.net/ruo91/img/kubernetes/v1.2/k8s_web_ui_5.png

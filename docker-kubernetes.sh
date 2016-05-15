@@ -80,7 +80,7 @@ function f_run {
       arp -d 172.17.1.$i > /dev/null 2>&1
   done
   echo "└-- SSH known hosts"
-  cat /dev/null > $HOME/.ssh/known_hosts
+  cat /dev/null > $HOME/.ssh/known_hosts > /dev/null 2>&1
   echo "done"
   echo
 
@@ -157,10 +157,10 @@ function f_run {
       for (( i=0; i<2; i++ )); do
           echo "├-- Run $CONTAINER_MINION-$i"
           if [ "$(docker images | grep -v 'REPOSITORY' | grep 'ruo91/kubernetes' | head -n 4 | awk '{ print $2}' | grep 'minion')" == "minion"  ]; then
-	      $DOCKER run -d --name="$CONTAINER_MINION-$i" -h "$CONTAINER_MINION-$i" --privileged=true -v /dev:/dev -v /sys:/sys -v /lib/modules:/lib/modules $DOCKER_HUB_USER_ID/$IMAGE_MINION > /dev/null 2>&1
+	      $DOCKER run -d --name="$CONTAINER_MINION-$i" -h "$CONTAINER_MINION-$i" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules $DOCKER_HUB_USER_ID/$IMAGE_MINION > /dev/null 2>&1
 
 	  else
-	      $DOCKER run -d --name="$CONTAINER_MINION-$i" -h "$CONTAINER_MINION-$i" --privileged=true -v /dev:/dev -v /sys:/sys -v /lib/modules:/lib/modules $IMAGE_MINION > /dev/null 2>&1
+	      $DOCKER run -d --name="$CONTAINER_MINION-$i" -h "$CONTAINER_MINION-$i" --privileged=true -v /dev:/dev -v /lib/modules:/lib/modules $IMAGE_MINION > /dev/null 2>&1
 	  fi
       done
       sleep 3
@@ -202,21 +202,12 @@ function f_run {
       echo "done"
       echo
 
-      # Issue : "kube-system" not found
-      KUBE_SYSTEM="kubectl create -f /opt/kube-system.json -s 172.17.1.4:8080"
-      $DOCKER exec $CONTAINER_CLIENT $KUBE_SYSTEM > /dev/null 2>&1
-
-      # Kube UI
-      KUBE_UI_RC="kubectl create -f /opt/kube-ui-rc.yaml --namespace=kube-system -s 172.17.1.4:8080"
-      KUBE_UI_SVC="kubectl create -f /opt/kube-ui-svc.yaml --namespace=kube-system -s 172.17.1.4:8080"
-
-      echo "- Web UI"
-      echo "├-- Create Kube UI RC"
-      $DOCKER exec $CONTAINER_CLIENT $KUBE_UI_RC > /dev/null 2>&1
-
-      echo "├-- Create Kube UI SVC"
-      $DOCKER exec $CONTAINER_CLIENT $KUBE_UI_SVC > /dev/null 2>&1
-      echo "└-- URL: http://172.17.1.4:8080/"
+      # Dashboard
+      DASHBOARD="kubectl create -f /opt/dashboard.yaml -s 172.17.1.4:8080"
+      echo "- Dashboard"
+      echo "├-- Create Dashboard"
+      $DOCKER exec $CONTAINER_CLIENT $DASHBOARD > /dev/null 2>&1
+      echo "└-- URL: http://localhost:8080/"
       echo "done"
       echo
 
